@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
 import { Iphone16Pro } from './ui/iphone-16-pro';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -50,7 +52,7 @@ export const Chatbot = () => {
         body: JSON.stringify({
           user_id: "kungumapriyaamkp5@gmail.com",
           agent_id: "6a0045d4f1247aea914a30eb",
-          session_id: "6a0045d4f1247aea914a30eb-ttuptbh7f5",
+          session_id: "6a0045d4f1247aea914a30eb-vklg28zawcg",
           message: userMessage
         })
       });
@@ -70,7 +72,15 @@ export const Chatbot = () => {
 
   return (
     <>
-      {/* Floating Toggle Button */}
+      <style>{`
+        .chatbot-markdown p { margin-bottom: 0.75rem; }
+        .chatbot-markdown p:last-child { margin-bottom: 0; }
+        .chatbot-markdown ul, .chatbot-markdown ol { margin-left: 1.25rem; margin-bottom: 0.75rem; }
+        .chatbot-markdown li { margin-bottom: 0.25rem; }
+        .chatbot-markdown strong { font-weight: 800; color: #111; }
+        .chatbot-markdown h1, .chatbot-markdown h2, .chatbot-markdown h3 { font-weight: 900; margin-top: 1rem; margin-bottom: 0.5rem; }
+      `}</style>
+      {/* Floating Toggle Button with Explicit Label */}
       <div className="fixed bottom-6 right-6 z-[1000] flex flex-col items-end gap-3">
 
         <motion.button
@@ -145,9 +155,15 @@ export const Chatbot = () => {
                     <div className={`p-4 rounded-2xl text-sm font-medium leading-relaxed ${
                       msg.role === 'user' 
                         ? 'bg-purple-600 text-white shadow-lg shadow-purple-100 rounded-tr-none' 
-                        : 'bg-gray-50 text-gray-800 border border-gray-100 rounded-tl-none'
+                        : 'bg-gray-50 text-gray-800 border border-gray-100 rounded-tl-none chatbot-markdown'
                     }`}>
-                      {msg.content}
+                      {msg.role === 'assistant' ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </div>
                 </motion.div>
