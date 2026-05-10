@@ -167,6 +167,20 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     } catch (err) { alert('Failed to add stop'); } finally { setLoading(false); }
   };
 
+  const handleDiscoverySubmit = async (e: any) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    try {
+      await api.put(`/trips/${trip.id}`, {
+        primaryDestination: data.city,
+        discoveryStrategy: data.strategy
+      });
+      onUpdate();
+    } catch (err) { alert('Failed to save preferences'); } finally { setLoading(false); }
+  };
+
   const handleAddActivity = async (e: any) => {
     e.preventDefault();
     setLoading(true);
@@ -252,20 +266,46 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
               </div>
             </div>
           ))
+        ) : !trip.primaryDestination ? (
+           <div className="col-span-full">
+              <div className="max-w-2xl mx-auto bg-white p-12 rounded-[3.5rem] shadow-2xl border border-blue-50 text-center">
+                 <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-white mx-auto mb-8 shadow-xl shadow-blue-200">
+                    <SearchCode className="w-10 h-10" />
+                 </div>
+                 <h4 className="text-3xl font-black text-gray-900 mb-2">The Planning Interview</h4>
+                 <p className="text-gray-500 font-medium mb-10">To build a professional, non-generic itinerary, we need to know your primary target.</p>
+                 
+                 <form onSubmit={handleDiscoverySubmit} className="space-y-6 text-left">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Which City & State are we targeting?</label>
+                       <input name="city" required placeholder="e.g. Kyoto, Japan or Varanasi, Uttar Pradesh" className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-black text-xl" />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Trip Strategy</label>
+                       <select name="strategy" className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-black text-lg text-gray-600">
+                          <option value="Single City">Single City Exploration (Deep Dive)</option>
+                          <option value="Multi-City">Multi-City Adventure (State-wide)</option>
+                       </select>
+                    </div>
+                    <button className="w-full py-6 bg-blue-600 text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-blue-200 hover:bg-blue-700 transition-all mt-4">
+                       GENERATE REAL-WORLD PLAN
+                    </button>
+                 </form>
+              </div>
+           </div>
         ) : (
           <div className="col-span-full space-y-12">
+            {/* AI Discovery Paths as before... */}
             <div className="text-center py-20 bg-gray-50/50 rounded-[4rem] border-4 border-dashed border-gray-200 mx-8">
               <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl border border-gray-50">
                 <MapPin className="w-12 h-12 text-gray-200" />
               </div>
-              <h4 className="text-3xl font-black text-gray-900 mb-2">Build your path</h4>
-              <p className="text-gray-500 font-medium mb-10 max-w-sm mx-auto">Add your first city stop or choose from our AI-curated discovery paths below.</p>
-              <button 
-                onClick={() => setShowAddStop(true)}
-                className="bg-blue-600 text-white px-12 py-5 rounded-[2rem] font-black text-xl shadow-2xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
-              >
-                Add First Stop
-              </button>
+              <h4 className="text-3xl font-black text-gray-900 mb-2">Destinations for {trip.primaryDestination}</h4>
+              <p className="text-gray-500 font-medium mb-10 max-w-sm mx-auto">Planning a {trip.discoveryStrategy} trip. Choose from our AI-curated discovery paths below.</p>
+              <div className="flex justify-center gap-4">
+                <button onClick={() => setShowAddStop(true)} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl">Add Manually</button>
+                <button onClick={() => { setLoading(true); api.put(`/trips/${trip.id}`, { primaryDestination: null }).then(() => onUpdate()).finally(() => setLoading(false)) }} className="bg-white text-gray-400 px-10 py-4 rounded-2xl font-black border border-gray-200">Reset Strategy</button>
+              </div>
             </div>
 
             <div className="px-8">
@@ -274,12 +314,12 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
                      <Brain className="w-6 h-6" />
                   </div>
                   <div>
-                     <h4 className="text-2xl font-black text-gray-900 tracking-tight">AI Discovery Paths</h4>
+                     <h4 className="text-2xl font-black text-gray-900 tracking-tight">AI Discovery Paths for {trip.primaryDestination}</h4>
                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Curated by Gemini 1.5 Pro</p>
                   </div>
                </div>
 
-               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
                   {trip.aiAnalysis?.recommendations?.itineraries?.map((itinerary: any, i: number) => (
                     <motion.div 
                       key={i}
@@ -293,12 +333,18 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
                           <h5 className="text-xl font-black text-gray-900 mb-3">{itinerary.title}</h5>
                           <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6 italic">"{itinerary.description}"</p>
                           
-                          <div className="space-y-3 pt-6 border-t border-gray-50">
-                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recommended Stops</p>
-                             {itinerary.stops.map((stop: string, sIdx: number) => (
-                               <div key={sIdx} className="flex items-center gap-3">
-                                  <div className="w-2 h-2 rounded-full bg-blue-600" />
-                                  <p className="text-sm font-bold text-gray-700">{stop}</p>
+                          <div className="space-y-4 pt-6 border-t border-gray-50 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Day-by-Day Roadmap</p>
+                             {itinerary.days.map((day: any, dIdx: number) => (
+                               <div key={dIdx} className="relative pl-6 pb-6 last:pb-0 border-l-2 border-blue-50">
+                                  <div className="absolute -left-[9px] top-0 w-4 h-4 bg-white border-2 border-blue-600 rounded-full" />
+                                  <div className="flex justify-between items-start">
+                                     <div>
+                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Day {day.day}</p>
+                                        <p className="text-sm font-bold text-gray-800 leading-tight mt-1">{day.activity}</p>
+                                        <p className="text-[10px] text-gray-400 font-medium mt-1">{day.location}</p>
+                                     </div>
+                                  </div>
                                </div>
                              ))}
                           </div>

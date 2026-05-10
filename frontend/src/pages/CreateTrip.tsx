@@ -35,7 +35,9 @@ const CreateTrip = () => {
     transportType: 'Flight',
     visibility: 'Private',
     invitees: '',
-    coverPhotoUrl: ''
+    coverPhotoUrl: '',
+    primaryDestination: '',
+    discoveryStrategy: 'Single City'
   });
 
   // Slug Auto-generation
@@ -121,13 +123,13 @@ const CreateTrip = () => {
                  </button>
                  
                  {step < 4 ? (
-                   <button 
-                     onClick={handleNext}
-                     disabled={!formData.name || (step === 2 && (!formData.startDate || !formData.endDate))}
-                     className="bg-gray-900 text-white px-10 py-5 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
-                   >
-                     CONTINUE <ArrowRight className="w-5 h-5" />
-                   </button>
+                    <button 
+                      onClick={handleNext}
+                      disabled={!formData.name || !formData.primaryDestination || (step === 2 && (!formData.startDate || !formData.endDate))}
+                      className="bg-gray-900 text-white px-10 py-5 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+                    >
+                      CONTINUE <ArrowRight className="w-5 h-5" />
+                    </button>
                  ) : (
                    <button 
                      onClick={handleSubmit}
@@ -228,6 +230,30 @@ const Step1 = ({ formData, setFormData }: any) => (
                value={formData.slug}
                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
              />
+          </div>
+       </div>
+
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Target City & State</label>
+             <input 
+               required
+               className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-lg"
+               placeholder="e.g. Kyoto, Japan or Varanasi, UP"
+               value={formData.primaryDestination}
+               onChange={(e) => setFormData({ ...formData, primaryDestination: e.target.value })}
+             />
+          </div>
+          <div className="space-y-2">
+             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Trip Strategy</label>
+             <select 
+               className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-bold text-gray-600"
+               value={formData.discoveryStrategy}
+               onChange={(e) => setFormData({ ...formData, discoveryStrategy: e.target.value })}
+             >
+                <option value="Single City">Single City Exploration</option>
+                <option value="Multi-City">Multi-City Adventure</option>
+             </select>
           </div>
        </div>
 

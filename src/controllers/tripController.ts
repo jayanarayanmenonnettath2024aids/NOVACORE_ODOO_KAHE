@@ -7,7 +7,8 @@ export const createTrip = async (req: Request, res: Response) => {
     const { 
       name, slug, startDate, endDate, description, coverPhotoUrl, 
       type, companionType, currency, budgetEstimate, 
-      travelPace, mood, transportType, visibility, invitees 
+      travelPace, mood, transportType, visibility, invitees,
+      primaryDestination, discoveryStrategy
     } = req.body;
     const userId = req.user!.userId;
 
@@ -33,6 +34,8 @@ export const createTrip = async (req: Request, res: Response) => {
         visibility: visibility || "Private",
         invitees,
         isPublic: visibility === "Public",
+        primaryDestination,
+        discoveryStrategy: discoveryStrategy || "Single City"
       }
     });
 
@@ -112,7 +115,8 @@ export const updateTrip = async (req: Request, res: Response) => {
     const { 
       name, slug, startDate, endDate, description, coverPhotoUrl, 
       type, companionType, currency, budgetEstimate, 
-      travelPace, mood, transportType, visibility, invitees 
+      travelPace, mood, transportType, visibility, invitees,
+      primaryDestination, discoveryStrategy
     } = req.body;
 
     const trip = await prisma.trip.findFirst({ where: { id, userId } });
@@ -136,7 +140,9 @@ export const updateTrip = async (req: Request, res: Response) => {
         transportType,
         visibility,
         invitees,
-        isPublic: visibility === "Public"
+        isPublic: visibility === "Public",
+        primaryDestination,
+        discoveryStrategy
       }
     });
 
