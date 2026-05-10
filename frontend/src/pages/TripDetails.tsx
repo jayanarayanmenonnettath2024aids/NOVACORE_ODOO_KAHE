@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, MapPin, DollarSign, Package, FileText,
   ChevronLeft, ChevronDown, Plus, Clock, Trash2, CheckCircle2, Circle, Check,
-  BarChart3, TrendingDown, AlertCircle,
-  Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
+  BarChart3, TrendingDown, AlertCircle, Sparkles,
+  Search, X, Edit3, Loader2, Users, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
 } from 'lucide-react';
 
 import api from '../api/axios';
@@ -18,15 +18,33 @@ const TripDetails = () => {
   const [trip, setTrip] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('itinerary');
   const [loading, setLoading] = useState(true);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const fetchTrip = async () => {
     try {
       const response = await api.get(`/trips/${id}`);
       setTrip(response.data);
+      // Automatically run analysis if trip has metadata
+      if (response.data?.primaryDestination && !aiAnalysis) {
+        runAIAnalysis();
+      }
     } catch (err) {
       console.error('Failed to fetch trip', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runAIAnalysis = async () => {
+    setIsAnalyzing(true);
+    try {
+      const res = await api.post(`/trips/${id}/analyze`);
+      setAiAnalysis(res.data);
+    } catch (err) {
+      console.error('AI Analysis failed', err);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -76,11 +94,9 @@ const TripDetails = () => {
             <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
               <MapPin className="w-4 h-4 text-purple-300" /> {trip.stops?.length || 0} destinations
             </span>
-            {trip.companionType && (
-              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
-                <Users2 className="w-4 h-4 text-purple-300" /> {trip.companionType}
+            <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
+                <Users className="w-4 h-4 text-purple-300" /> {trip.companionType}
               </span>
-            )}
             {trip.mood && (
               <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 capitalize">
                 <TrendingUp className="w-4 h-4 text-amber-300" /> {trip.mood}
@@ -159,7 +175,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     try {
       await api.post(`/trips/${trip.id}/stops`, {
         ...data,
-        orderIndex: trip.stops.length
+        orderIndex: trip?.stops?.length || 0
       });
       setShowAddStop(false);
       onUpdate();
@@ -205,8 +221,8 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
           <h3 className="text-xl font-black text-gray-900 tracking-tight">Itinerary Builder</h3>
           <p className="text-gray-400 text-sm font-medium mt-0.5">Review and construct your full plan.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-gray-100 p-1 rounded-xl">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="hidden sm:flex bg-gray-100 p-1 rounded-xl">
             <button
               onClick={() => setItineraryView('timeline')}
               className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${
@@ -221,6 +237,14 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
             >GRID</button>
           </div>
           <button
+            onClick={runAIAnalysis}
+            disabled={isAnalyzing}
+            className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50"
+          >
+            {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+            {isAnalyzing ? 'THINKING...' : 'DEEP THINK AI'}
+          </button>
+          <button
             onClick={() => setShowAddStop(true)}
             className="bg-purple-600 text-white px-6 py-3 rounded-xl font-black flex items-center gap-2 hover:bg-purple-700 transition-all shadow-lg shadow-purple-100 text-sm"
           >
@@ -229,31 +253,116 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
         </div>
       </div>
 
-      {/* Section Cards or Empty State */}
-      {stops.length > 0 ? (
-        <div className={itineraryView === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}>
-          {stops.map((stop: any, idx: number) => {
+      {/* AI Reasoning Display Section */}
+      {aiAnalysis && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+             <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4 opacity-80">
+                  <Sparkles className="w-5 h-5" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Model: {aiAnalysis?.model || 'Traveloop-v1'}</span>
+                </div>
+                <h4 className="text-xl font-black mb-2">Discovery Reasoning</h4>
+                <p className="text-sm font-medium opacity-90 leading-relaxed">
+                  {aiAnalysis?.reasoning?.budget || 'Calculating optimal budget strategies...'}
+                </p>
+                <div className="mt-6 flex items-center gap-3">
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${aiAnalysis?.reasoning?.status === 'OPTIMIZED' ? 'bg-green-400/20 text-green-100' : 'bg-amber-400/20 text-amber-100'}`}>
+                    {aiAnalysis?.reasoning?.status || 'ANALYZING'}
+                  </span>
+                  <span className="text-xs font-bold">Suggested: ₹{aiAnalysis?.reasoning?.suggestedAmount?.toLocaleString() || '---'}</span>
+                </div>
+             </div>
+             <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Zap className="w-24 h-24" />
+             </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+             <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Package className="w-4 h-4 text-purple-600" />
+                AI Packing List
+             </h4>
+             <ul className="space-y-3">
+                {aiAnalysis?.recommendations?.packing?.map((item: string, i: number) => (
+                  <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    {item}
+                  </li>
+                )) || <li className="text-gray-400 italic text-xs">Generating list...</li>}
+             </ul>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+             <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-purple-600" />
+                Pace Advice
+             </h4>
+             <p className="text-sm font-bold text-gray-700 leading-relaxed mb-6 italic">
+                "{aiAnalysis?.recommendations?.paceAdvice || 'Analyzing travel pace...'}"
+             </p>
+             <div className="p-4 bg-purple-50 rounded-2xl">
+                <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-2">Strategy Used</p>
+                <p className="text-xs font-bold text-gray-900">{trip.discoveryStrategy || 'Single City Deep Dive'}</p>
+             </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Suggested Discovery Paths if no stops exist */}
+      {aiAnalysis && (!trip.stops || trip.stops.length === 0) && (
+        <section className="space-y-6">
+           <div className="flex items-center gap-4">
+              <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                AI Discovery Paths for {trip.primaryDestination}
+              </h2>
+              <div className="w-full h-px bg-gray-200/80" />
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {aiAnalysis?.recommendations?.itineraries?.map((it: any, idx: number) => (
+                <motion.div 
+                  key={idx}
+                  whileHover={{ y: -4 }}
+                  className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-lg relative group cursor-pointer hover:border-purple-200"
+                >
+                   <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-6 group-hover:scale-110 transition-transform">
+                      <Sparkles className="w-6 h-6" />
+                   </div>
+                   <h4 className="text-base font-black text-gray-900 mb-2">{it.title}</h4>
+                   <p className="text-xs font-medium text-gray-500 leading-relaxed mb-6">
+                      Recommended: {it.activity}
+                   </p>
+                   <button className="w-full py-3 bg-gray-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100">
+                      IMPORT PATH
+                   </button>
+                </motion.div>
+              ))}
+           </div>
+        </section>
+      )}
+
+      <div className={`relative ${itineraryView === 'timeline' ? 'border-l-4 border-purple-100 ml-8 space-y-12 pb-12' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12'}`}>
+        {trip.stops?.length > 0 ? (
+          trip.stops.map((stop: any, idx: number) => {
             const activityCost = stop.activities?.reduce((s: number, a: any) => s + (a.cost || 0), 0) || 0;
             const hasDateRange = stop.startDate || stop.endDate;
             return (
-              <motion.div
-                key={stop.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.07 }}
-                className="section-card bg-white rounded-2xl border border-gray-150 p-6 shadow-sm"
-              >
-                {/* Section header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Section {idx + 1}:</p>
-                    <h4 className="text-base font-black text-gray-900 leading-tight">{stop.cityName}{stop.country ? `, ${stop.country}` : ''}</h4>
-                    {/* Activities summary */}
-                    <p className="text-sm text-gray-500 font-medium mt-1.5 leading-relaxed">
-                      {stop.activities?.length > 0
-                        ? stop.activities.map((a: any) => a.name).join(' · ')
-                        : 'All the necessary information about this section. This can be anything like travel section, hotel or any other activity.'}
-                    </p>
+              <div key={stop.id} className={`relative group ${itineraryView === 'timeline' ? 'pl-12' : ''}`}>
+                {itineraryView === 'timeline' && <div className="absolute -left-[14px] top-0 w-6 h-6 bg-purple-600 rounded-full border-4 border-white shadow-xl ring-4 ring-purple-50 group-hover:scale-125 transition-transform"></div>}
+                <div className={`bg-white rounded-[2.5rem] border border-gray-100 shadow-sm group-hover:shadow-xl transition-all duration-300 ${itineraryView === 'timeline' ? 'p-8' : 'p-6 h-full flex flex-col'}`}>
+                  <div className={`flex flex-col justify-between items-start gap-4 mb-6 ${itineraryView === 'timeline' ? 'md:flex-row' : ''}`}>
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-black text-base shadow-inner">
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <h4 className="text-2xl font-black text-gray-900 tracking-tight line-clamp-1">{stop.cityName}</h4>
+                        <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">{stop.country}</p>
+                      </div>
                   </div>
                   {/* Edit/Delete */}
                   <div className="flex gap-1.5 ml-4">
@@ -448,10 +557,25 @@ const BudgetTab = ({ trip, currency }: any) => {
             className="w-full pl-11 pr-4 py-2.5 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-200"
           />
         </div>
-        <div className="flex gap-2">
-          {['Group by','Filter','Sort by...'].map(label => (
-            <button key={label} className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-600 hover:bg-gray-50 hover:border-purple-300 transition-all">{label}</button>
-          ))}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center">
+          <div className="flex justify-between text-xs font-black text-gray-400 mb-3 tracking-widest">
+            <span>PLANNING COMPLETION</span>
+            <span className="text-purple-600">{Math.round((actualCost / predictedTotal) * 100) || 0}%</span>
+          </div>
+          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }} 
+              animate={{ width: `${Math.min(100, (actualCost / (predictedTotal || 1)) * 100)}%` }} 
+              className="h-full bg-purple-600 rounded-full"
+            ></motion.div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-8 rounded-[2.5rem] shadow-xl text-white">
+          <div className="flex items-center gap-3 mb-4 opacity-80">
+            <AlertCircle className="w-6 h-6" />
+            <span className="text-xs font-black uppercase tracking-widest">AI SAVINGS BOT</span>
+          </div>
+          <p className="font-bold text-base leading-snug">The AI detected potential savings of {symbol}{Math.round(predictedTotal * 0.12)} if you switch to group activities.</p>
         </div>
       </div>
 
@@ -828,6 +952,7 @@ const JournalTab = ({ trip, onUpdate }: any) => {
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
         
         {/* Header section */}
@@ -838,6 +963,43 @@ const JournalTab = ({ trip, onUpdate }: any) => {
             <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-700 shadow-sm">
               <span>Trip: {trip.name}</span>
               <ChevronDown className="w-4 h-4 text-gray-400" />
+=======
+      <div className="space-y-6">
+        {notes.map((note: any) => (
+          <motion.div
+            key={note.id}
+            whileHover={{ y: -5 }}
+            className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm hover:shadow-2xl transition-all group"
+          >
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="bg-purple-50 text-purple-600 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest">Memories</span>
+                  <span className="text-xs font-black text-gray-300 uppercase tracking-widest flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> {new Date(note.timestamp).toLocaleString()}
+                  </span>
+                </div>
+                {note.stopId && (
+                  <p className="flex items-center gap-1.5 text-sm font-bold text-purple-400">
+                    <MapPin className="w-3.5 h-3.5" /> Tied to {trip?.stops?.find((s: any) => s.id === note.stopId)?.cityName || 'Unknown Stop'}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => { setEditNote(note); setShowAdd(true); }}
+                  className="p-3 text-gray-300 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
+                >
+                  <Edit3 className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(note.id)}
+                  className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+>>>>>>> 41803eb30b09472b0a93ec6a0635601fd95a0a77
             </div>
             
             <button

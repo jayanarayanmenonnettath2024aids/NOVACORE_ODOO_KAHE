@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 import { SimpleHeader } from '@/components/ui/simple-header';
 import IntroVideo from './pages/IntroVideo';
+import { Chatbot } from './components/Chatbot';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -109,6 +110,7 @@ function App() {
   return (
     <Router>
       <AppContent />
+      <Chatbot />
     </Router>
   );
 }
