@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
+import { AIService } from '../services/aiService';
 
 export const createTrip = async (req: Request, res: Response) => {
   try {
@@ -87,7 +88,17 @@ export const getTripById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Trip not found' });
     }
 
-    res.json(trip);
+    let aiAnalysis = null;
+    try {
+      aiAnalysis = await AIService.analyzeTrip(id);
+    } catch (aiError) {
+      console.error('AI Analysis failed, skipping:', aiError);
+    }
+
+    res.json({
+      ...trip,
+      aiAnalysis
+    });
   } catch (error) {
     console.error('Error fetching trip details:', error);
     res.status(500).json({ error: 'Failed to fetch trip details' });

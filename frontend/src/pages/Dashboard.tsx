@@ -5,7 +5,8 @@ import {
   Plus, Calendar, MapPin, DollarSign, Clock, 
   CheckCircle2, Briefcase, Globe, Sun, 
   ChevronRight, Activity, Zap, Star, TrendingUp, ArrowRight,
-  AlertCircle, Navigation, Target, Sparkles, Heart, Wallet, Loader2
+  AlertCircle, Navigation, Target, Sparkles, Heart, Wallet, Loader2,
+  Brain, Fingerprint, SearchCode, ShieldCheck, Cpu
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -20,12 +21,17 @@ const Dashboard = () => {
   const [goalTitle, setGoalTitle] = useState('');
   const [addAmount, setAddAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [aiInsights, setAiInsights] = useState<any>(null);
   const navigate = useNavigate();
 
   const fetchDashboard = async () => {
     try {
-      const response = await api.get('/dashboard');
-      setData(response.data);
+      const [dashRes, aiRes] = await Promise.all([
+        api.get('/dashboard'),
+        api.get('/api/ai/reasoning')
+      ]);
+      setData(dashRes.data);
+      setAiInsights(aiRes.data);
     } catch (err) {
       console.error('Failed to fetch dashboard', err);
     } finally {
@@ -302,7 +308,61 @@ const Dashboard = () => {
           </div>
 
           <div className="space-y-10">
-            {/* AI Smart Reminders */}
+          {/* AI Deep Reasoning Engine */}
+          {aiInsights && (
+             <section className="bg-white rounded-[3.5rem] p-10 shadow-2xl border border-gray-100 relative overflow-hidden group">
+                <div className="relative z-10">
+                   <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-3">
+                         <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                            <Brain className="w-6 h-6" />
+                         </div>
+                         <div>
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">AI Smart Hub</h3>
+                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Reasoning Engine v2.0</p>
+                         </div>
+                      </div>
+                      <Cpu className="w-6 h-6 text-gray-200 group-hover:text-blue-200 transition-colors" />
+                   </div>
+
+                   <div className="space-y-8">
+                      {aiInsights.insights.map((insight: any) => (
+                        <div key={insight.id} className="space-y-4">
+                           <div className="flex items-center gap-2">
+                              <Fingerprint className="w-4 h-4 text-gray-300" />
+                              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{insight.title}</p>
+                           </div>
+                           <div className="pl-6 border-l-2 border-gray-100 space-y-3">
+                              {insight.reasoning.map((step: string, i: number) => (
+                                <p key={i} className="text-sm text-gray-500 font-medium leading-relaxed italic">• {step}</p>
+                              ))}
+                           </div>
+                           <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                 <ShieldCheck className="w-4 h-4 text-blue-600" />
+                                 <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Recommendation</span>
+                              </div>
+                              <p className="text-sm font-bold text-gray-800 leading-relaxed">{insight.recommendation}</p>
+                              <div className="mt-4 flex items-center justify-between">
+                                 <div className="flex -space-x-2">
+                                    {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white" />)}
+                                 </div>
+                                 <span className="text-[10px] font-black text-gray-400">CONFIDENCE: {insight.confidence}%</span>
+                              </div>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+
+                   <button className="w-full mt-10 py-5 bg-gray-900 hover:bg-black text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl">
+                      REGENERATE ANALYSIS
+                   </button>
+                </div>
+                <div className="absolute bottom-0 right-0 -mb-20 -mr-20 w-64 h-64 bg-blue-50/50 rounded-full blur-3xl"></div>
+             </section>
+          )}
+
+          {/* AI Smart Reminders */}
             {data?.aiReminders?.length > 0 && (
               <section className="bg-blue-600 rounded-[3rem] p-8 text-white shadow-2xl relative overflow-hidden">
                  <div className="relative z-10">
