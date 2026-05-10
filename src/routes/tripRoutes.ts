@@ -4,6 +4,7 @@ import { validateRequest } from '../middlewares/validationMiddleware';
 import { createTripSchema, addStopSchema, addActivitySchema } from '../utils/validators';
 import { 
   createTrip, 
+  analyzeTrip,
   getTrips, 
   getTripById, 
   updateTrip, 
@@ -35,6 +36,7 @@ router.get('/:id', getTripById);
 router.put('/:id', updateTrip);
 router.delete('/:id', deleteTrip);
 router.post('/:id/clone', cloneTrip);
+router.post('/:id/analyze', analyzeTrip);
 
 // Stops & Activities
 router.post('/:tripId/stops', validateRequest(addStopSchema), addStop);

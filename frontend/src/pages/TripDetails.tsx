@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, MapPin, DollarSign, Package, FileText,
   ChevronLeft, Plus, Clock, Trash2, CheckCircle2, Circle,
-  BarChart3, TrendingDown, AlertCircle,
-  Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
+  BarChart3, TrendingDown, AlertCircle, Sparkles,
+  Search, X, Edit3, Loader2, Users, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import api from '../api/axios';
@@ -17,15 +17,33 @@ const TripDetails = () => {
   const [trip, setTrip] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('itinerary');
   const [loading, setLoading] = useState(true);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const fetchTrip = async () => {
     try {
       const response = await api.get(`/trips/${id}`);
       setTrip(response.data);
+      // Automatically run analysis if trip has metadata
+      if (response.data.primaryDestination && !aiAnalysis) {
+        runAIAnalysis();
+      }
     } catch (err) {
       console.error('Failed to fetch trip', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runAIAnalysis = async () => {
+    setIsAnalyzing(true);
+    try {
+      const res = await api.post(`/trips/${id}/analyze`);
+      setAiAnalysis(res.data);
+    } catch (err) {
+      console.error('AI Analysis failed', err);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -75,11 +93,9 @@ const TripDetails = () => {
             <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
               <MapPin className="w-4 h-4 text-purple-300" /> {trip.stops?.length || 0} destinations
             </span>
-            {trip.companionType && (
-              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
-                <Users2 className="w-4 h-4 text-purple-300" /> {trip.companionType}
+            <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
+                <Users className="w-4 h-4 text-purple-300" /> {trip.companionType}
               </span>
-            )}
             {trip.mood && (
               <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 capitalize">
                 <TrendingUp className="w-4 h-4 text-amber-300" /> {trip.mood}
@@ -185,10 +201,14 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
           <p className="text-gray-500 font-medium">Review and construct your full plan.</p>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="flex bg-gray-100 p-1 rounded-xl">
-            <button onClick={() => setItineraryView('timeline')} className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${itineraryView === 'timeline' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}>LIST</button>
-            <button onClick={() => setItineraryView('grid')} className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${itineraryView === 'grid' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}>GRID</button>
-          </div>
+          <button
+            onClick={runAIAnalysis}
+            disabled={isAnalyzing}
+            className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50"
+          >
+            {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+            {isAnalyzing ? 'THINKING...' : 'DEEP THINK AI'}
+          </button>
           <button
             onClick={() => setShowAddStop(true)}
             className="flex-1 md:flex-none bg-purple-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:bg-purple-700 transition-all shadow-xl shadow-purple-100"
@@ -197,6 +217,98 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
           </button>
         </div>
       </div>
+
+      {/* AI Reasoning Display Section */}
+      {aiAnalysis && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+             <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4 opacity-80">
+                  <Sparkles className="w-5 h-5" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Model: {aiAnalysis.model}</span>
+                </div>
+                <h4 className="text-xl font-black mb-2">Discovery Reasoning</h4>
+                <p className="text-sm font-medium opacity-90 leading-relaxed">
+                  {aiAnalysis.reasoning.budget}
+                </p>
+                <div className="mt-6 flex items-center gap-3">
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${aiAnalysis.reasoning?.status === 'OPTIMIZED' ? 'bg-green-400/20 text-green-100' : 'bg-amber-400/20 text-amber-100'}`}>
+                    {aiAnalysis.reasoning?.status || 'ANALYZING'}
+                  </span>
+                  <span className="text-xs font-bold">Suggested: ₹{aiAnalysis.reasoning?.suggestedAmount?.toLocaleString() || '---'}</span>
+                </div>
+             </div>
+             <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Zap className="w-24 h-24" />
+             </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+             <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Package className="w-4 h-4 text-purple-600" />
+                AI Packing List
+             </h4>
+             <ul className="space-y-3">
+                {aiAnalysis.recommendations.packing.map((item: string, i: number) => (
+                  <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    {item}
+                  </li>
+                ))}
+             </ul>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+             <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-purple-600" />
+                Pace Advice
+             </h4>
+             <p className="text-sm font-bold text-gray-700 leading-relaxed mb-6 italic">
+                "{aiAnalysis.recommendations.paceAdvice}"
+             </p>
+             <div className="p-4 bg-purple-50 rounded-2xl">
+                <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-2">Strategy Used</p>
+                <p className="text-xs font-bold text-gray-900">{trip.discoveryStrategy || 'Single City Deep Dive'}</p>
+             </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Suggested Discovery Paths if no stops exist */}
+      {aiAnalysis && (!trip.stops || trip.stops.length === 0) && (
+        <section className="space-y-6">
+           <div className="flex items-center gap-4">
+              <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                AI Discovery Paths for {trip.primaryDestination}
+              </h2>
+              <div className="w-full h-px bg-gray-200/80" />
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {aiAnalysis.recommendations.itineraries.map((it: any, idx: number) => (
+                <motion.div 
+                  key={idx}
+                  whileHover={{ y: -4 }}
+                  className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-lg relative group cursor-pointer hover:border-purple-200"
+                >
+                   <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-6 group-hover:scale-110 transition-transform">
+                      <Sparkles className="w-6 h-6" />
+                   </div>
+                   <h4 className="text-base font-black text-gray-900 mb-2">{it.title}</h4>
+                   <p className="text-xs font-medium text-gray-500 leading-relaxed mb-6">
+                      Recommended: {it.activity}
+                   </p>
+                   <button className="w-full py-3 bg-gray-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100">
+                      IMPORT PATH
+                   </button>
+                </motion.div>
+              ))}
+           </div>
+        </section>
+      )}
 
       <div className={`relative ${itineraryView === 'timeline' ? 'border-l-4 border-purple-100 ml-8 space-y-12 pb-12' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12'}`}>
         {trip.stops?.length > 0 ? (

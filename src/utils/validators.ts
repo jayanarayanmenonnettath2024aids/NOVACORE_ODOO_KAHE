@@ -23,7 +23,13 @@ export const createTripSchema = z.object({
     description: z.string().optional(),
     coverPhotoUrl: z.string().optional(),
     type: z.string().optional(),
-    isPublic: z.boolean().optional()
+    isPublic: z.boolean().optional(),
+    primaryDestination: z.string().optional(),
+    discoveryStrategy: z.string().optional(),
+    mood: z.string().optional(),
+    budgetEstimate: z.number().optional(),
+    currency: z.string().optional(),
+    visibility: z.string().optional()
   })
 });
 
