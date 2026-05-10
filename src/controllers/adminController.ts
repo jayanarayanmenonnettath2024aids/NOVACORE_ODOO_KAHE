@@ -4,8 +4,11 @@ import prisma from '../prisma';
 export const getStats = async (req: Request, res: Response) => {
   try {
     // Check if user is admin
-    const userId = req.user!.userId;
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const userId = req.user.userId;
+    console.log('Admin Stats Request by user:', userId);
     const admin = await prisma.user.findUnique({ where: { id: userId } });
+    console.log('Admin Role Check:', admin?.role);
     if (admin?.role !== 'ADMIN') return res.status(403).json({ error: 'Access denied' });
 
     const totalUsers = await prisma.user.count();
@@ -40,7 +43,8 @@ export const getStats = async (req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.userId;
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const userId = req.user.userId;
     const admin = await prisma.user.findUnique({ where: { id: userId } });
     if (admin?.role !== 'ADMIN') return res.status(403).json({ error: 'Access denied' });
 

@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Calendar, MapPin, DollarSign, Clock, 
-  CheckCircle2, Briefcase, Globe, Sun, 
-  ChevronRight, Activity, Zap, Star, TrendingUp, ArrowRight,
-  AlertCircle, Navigation, Target, Sparkles, Heart, Wallet, Loader2, Search, SlidersHorizontal, ArrowUpDown, Filter
+  CheckCircle2, Briefcase, Globe, 
+  ChevronRight, 
+  Target, Wallet, Loader2, Search
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -72,6 +72,16 @@ const Dashboard = () => {
 
   // Slide interval timer for Banner
   useEffect(() => {
+    // Redirect Admin to Admin Panel
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user.role === 'ADMIN') {
+        navigate('/admin-dashboard');
+        return;
+      }
+    }
+
     const slideTimer = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % bannerSlides.length);
     }, 5000);
@@ -195,7 +205,7 @@ const Dashboard = () => {
       `}</style>
 
       {/* Hero Slideshow Banner Section */}
-      <div className="relative w-full h-[360px] rounded-[2.5rem] overflow-hidden shadow-2xl border border-gray-100">
+      <div className="relative w-full h-[360px] rounded-none overflow-hidden shadow-2xl border border-gray-100">
         <div className="absolute inset-0">
           <AnimatePresence mode="wait">
             <motion.img 
@@ -213,12 +223,8 @@ const Dashboard = () => {
         </div>
         
         {/* Banner Content Layout */}
-        <div className="absolute inset-0 p-10 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8 z-10 text-white">
+        <div className="absolute inset-0 p-10 md:p-14 flex flex-col justify-end pb-20 z-10 text-white">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10 text-purple-300 text-[10px] font-black uppercase tracking-widest">
-              <Sparkles className="w-4 h-4" />
-              <span>Slideshow Banner • {currentSlide + 1} of {bannerSlides.length}</span>
-            </div>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
               {bannerSlides[currentSlide].caption}
             </h1>
@@ -226,19 +232,6 @@ const Dashboard = () => {
               Currently viewing: <span className="text-purple-300 font-bold">{bannerSlides[currentSlide].title}</span>
             </p>
           </div>
-
-          {/* Floating AI Reminders in Glass Panel within Banner */}
-          {data?.aiReminders?.length > 0 && (
-            <div className="hidden lg:block w-80 bg-white/10 backdrop-blur-md border border-white/10 p-5 rounded-2xl shadow-2xl">
-              <div className="flex items-center gap-1.5 mb-2.5 text-[9px] font-black uppercase tracking-wider text-purple-300">
-                <Zap className="w-4 h-4 text-amber-300 fill-amber-300 animate-pulse" />
-                <span>AI Co-Pilot Suggestion</span>
-              </div>
-              <p className="text-xs font-bold leading-relaxed text-gray-200">
-                "{data.aiReminders[0].message}"
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Carousel Slide Indicators Dots */}
@@ -254,17 +247,62 @@ const Dashboard = () => {
       </div>
 
       {/* Control Actions (Search & Filtering System exactly like the wireframe) */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-white p-4.5 rounded-[2rem] border border-gray-100 shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-white p-4.5 rounded-[2rem] border border-gray-100 shadow-sm z-30 relative">
         {/* Search Bar (Taking 7 columns on desktop) */}
-        <div className="relative md:col-span-7 w-full">
-          <Search className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
+        <div className="relative md:col-span-7 w-full z-50">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
           <input 
             type="text" 
-            placeholder="Search bar ......"
-            className="w-full pl-12 pr-4 py-3 bg-gray-55/60 border-none rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700 placeholder:text-gray-400 transition-all"
+            placeholder="Search for destinations, trips, or activities..."
+            className="w-full pl-14 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-300 text-gray-700 placeholder:text-gray-400 transition-all shadow-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          
+          {/* Dynamic Search Results Dropdown */}
+          <AnimatePresence>
+            {searchQuery.trim().length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute top-full left-0 right-0 mt-3 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[100] max-h-80 overflow-y-auto no-scrollbar"
+              >
+                {filteredTrips.length > 0 ? (
+                  <div className="p-2 space-y-1">
+                    <div className="px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      Search Results ({filteredTrips.length})
+                    </div>
+                    {filteredTrips.map((trip: any) => (
+                      <button 
+                        key={trip.id}
+                        onClick={() => navigate(`/trips/${trip.id}`)}
+                        className="w-full flex items-center gap-4 p-3 hover:bg-purple-50 rounded-xl transition-all cursor-pointer text-left group"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-gray-100 overflow-hidden shrink-0">
+                          <img 
+                            src={trip.coverPhotoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=100&q=80'} 
+                            alt={trip.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-purple-600 transition-colors">{trip.name}</h4>
+                          <p className="text-[10px] text-gray-500 font-bold">{new Date(trip.startDate).toLocaleDateString()}</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <Search className="w-8 h-8 text-gray-200 mx-auto mb-3" />
+                    <p className="text-xs font-bold text-gray-500">No trips found for "{searchQuery}"</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Wireframe Buttons: Group by, Filter, Sort by... (Taking 5 columns on desktop) */}
@@ -304,6 +342,45 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
+
+      {/* Upcoming Trip Timer Card */}
+      {timeLeft && nextTrip && (
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 hover:border-purple-200 transition-all">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Upcoming Trip Destination</p>
+              <h3 className="text-lg font-black text-gray-900 tracking-tight">{nextTrip.name}</h3>
+            </div>
+          </div>
+          <div className="text-right w-full md:w-auto bg-gray-50 px-8 py-4 rounded-2xl">
+            {timeLeft === 'ARRIVED' ? (
+              <span className="text-2xl font-black text-purple-600 tracking-tight">ARRIVED</span>
+            ) : (
+              <div className="flex items-center justify-center gap-6">
+                <div className="text-center">
+                  <span className="text-2xl font-black text-gray-900 leading-none">{timeLeft.days}</span>
+                  <span className="text-[9px] font-black text-gray-400 block uppercase tracking-widest mt-1">Days</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-2xl font-black text-gray-900 leading-none">{timeLeft.hours}</span>
+                  <span className="text-[9px] font-black text-gray-400 block uppercase tracking-widest mt-1">Hrs</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-2xl font-black text-gray-900 leading-none">{timeLeft.minutes}</span>
+                  <span className="text-[9px] font-black text-gray-400 block uppercase tracking-widest mt-1">Mins</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-2xl font-black text-purple-600 leading-none">{timeLeft.seconds}</span>
+                  <span className="text-[9px] font-black text-purple-400 block uppercase tracking-widest mt-1">Secs</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* SECTION 1: Top Regional Selections */}
       <section className="space-y-6">

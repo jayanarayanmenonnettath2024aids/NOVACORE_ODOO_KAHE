@@ -5,6 +5,12 @@ export const signupSchema = z.object({
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters long'),
     name: z.string().min(2, 'Name must be at least 2 characters long'),
+    phone: z.string().optional(),
+    city: z.string().optional(),
+    country: z.string().optional(),
+    bio: z.string().optional(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional()
   })
 });
 
@@ -23,7 +29,13 @@ export const createTripSchema = z.object({
     description: z.string().optional(),
     coverPhotoUrl: z.string().optional(),
     type: z.string().optional(),
-    isPublic: z.boolean().optional()
+    isPublic: z.boolean().optional(),
+    primaryDestination: z.string().optional(),
+    discoveryStrategy: z.string().optional(),
+    mood: z.string().optional(),
+    budgetEstimate: z.number().optional(),
+    currency: z.string().optional(),
+    visibility: z.string().optional()
   })
 });
 

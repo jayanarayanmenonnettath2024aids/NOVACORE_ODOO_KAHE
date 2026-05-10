@@ -14,12 +14,15 @@ declare global {
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
+  console.log('Auth Middleware - Header:', authHeader);
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('Auth Middleware - No token provided');
     return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
 
   const token = authHeader.split(' ')[1];
+  console.log('Auth Middleware - Token found');
 
   try {
     const decoded = verifyToken(token) as { userId: string };

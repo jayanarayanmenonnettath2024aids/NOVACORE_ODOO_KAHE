@@ -9,9 +9,10 @@ import Explore from './pages/Explore';
 import PublicTrip from './pages/PublicTrip';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import InvoiceDetails from './pages/InvoiceDetails';
 import { SimpleHeader } from '@/components/ui/simple-header';
 import IntroVideo from './pages/IntroVideo';
-import Landing from './pages/Landing';
+import { Chatbot } from './components/Chatbot';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -23,7 +24,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function AppContent() {
   const location = useLocation();
-  const isImmersivePage = ['/', '/login', '/signup', '/landing'].includes(location.pathname);
+  const isImmersivePage = ['/', '/login', '/signup'].includes(location.pathname);
 
   if (isImmersivePage) {
     return (
@@ -31,19 +32,17 @@ function AppContent() {
         <Route path="/" element={<IntroVideo />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/landing" element={<Landing />} />
       </Routes>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <SimpleHeader />
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+      {location.pathname !== '/admin-dashboard' && <SimpleHeader />}
+      <main className={`flex-1 w-full ${location.pathname === '/admin-dashboard' ? 'p-0' : 'max-w-7xl mx-auto px-6 py-8'}`}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/landing" element={<Landing />} />
           <Route 
             path="/dashboard" 
             element={
@@ -93,10 +92,18 @@ function AppContent() {
             } 
           />
           <Route 
-            path="/admin" 
+            path="/admin-dashboard" 
             element={
               <ProtectedRoute>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/billing/:id" 
+            element={
+              <ProtectedRoute>
+                <InvoiceDetails />
               </ProtectedRoute>
             } 
           />
@@ -112,6 +119,7 @@ function App() {
   return (
     <Router>
       <AppContent />
+      <Chatbot />
     </Router>
   );
 }

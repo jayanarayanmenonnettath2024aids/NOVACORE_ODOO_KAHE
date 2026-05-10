@@ -12,8 +12,20 @@ export const createTrip = async (req: Request, res: Response) => {
     } = req.body;
     const userId = req.user!.userId;
 
+    if (!name || !startDate || !endDate) {
+       return res.status(400).json({ error: 'Missing mandatory fields: name, startDate, or endDate' });
+    }
+
+    // Robust Date Parsing
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+       return res.status(400).json({ error: 'Invalid date format provided. Please use YYYY-MM-DD.' });
+    }
+
     // Auto-generate unique slug (always append random entropy to prevent collisions)
-    const baseSlug = (slug || name).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    const baseSlug = (slug || name).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 50);
     const tripSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
 
     const trip = await prisma.trip.create({
@@ -21,14 +33,14 @@ export const createTrip = async (req: Request, res: Response) => {
         userId,
         name,
         slug: tripSlug,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: start,
+        endDate: end,
         description,
         coverPhotoUrl,
         type: type || "National",
         companionType: companionType || "Solo",
         currency: currency || "INR",
-        budgetEstimate: budgetEstimate ? parseFloat(budgetEstimate) : null,
+        budgetEstimate: budgetEstimate ? parseFloat(budgetEstimate.toString()) : null,
         travelPace: travelPace || "Moderate",
         mood,
         transportType,
@@ -41,9 +53,25 @@ export const createTrip = async (req: Request, res: Response) => {
     });
 
     res.status(201).json(trip);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating trip:', error);
-    res.status(500).json({ error: 'Failed to create trip' });
+    // Handle unique constraint violation for slug
+    if (error.code === 'P2002') {
+       return res.status(400).json({ error: 'A trip with this name or slug already exists. Please try a different name.' });
+    }
+    res.status(500).json({ error: `Internal Server Error: ${error.message || 'Failed to create trip'}` });
+  }
+};
+
+export const analyzeTrip = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await AIService.analyzeTrip(id);
+    if (!result) return res.status(404).json({ error: 'Trip not found' });
+    res.json(result);
+  } catch (error) {
+    console.error('Error analyzing trip:', error);
+    res.status(500).json({ error: 'AI analysis failed' });
   }
 };
 

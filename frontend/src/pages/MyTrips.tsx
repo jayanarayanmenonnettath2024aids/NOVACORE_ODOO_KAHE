@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Search, MapPin, Calendar, Trash2, Edit3, 
-  Eye, MoreHorizontal, Filter, Grid, List as ListIcon, 
-  ArrowUpRight, Clock, Globe
+  Eye, Filter, Grid, List as ListIcon, 
+  Globe
 } from 'lucide-react';
 import api from '../api/axios';
 
 const MyTrips = () => {
-  const navigate = useNavigate();
   const [trips, setTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
