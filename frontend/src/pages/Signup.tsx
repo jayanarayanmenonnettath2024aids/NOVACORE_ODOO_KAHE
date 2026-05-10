@@ -25,13 +25,22 @@ const Signup = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-120px)]">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100"
+    <>
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center"
+        style={{ backgroundImage: 'url(/auth_bg.jpeg)' }}
       >
+        <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]"></div>
+      </div>
+      
+      <div className="flex items-center justify-center min-h-[calc(100vh-120px)] relative z-10">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20"
+        >
         <div className="text-center mb-8">
+          <img src="/src/assets/logo.png" alt="Traveloop Logo" className="w-32 h-32 mx-auto mb-4 rounded-xl shadow-lg" />
           <h2 className="text-3xl font-bold text-gray-900">Join Traveloop</h2>
           <p className="text-gray-500 mt-2">Start your travel planning journey today</p>
         </div>
@@ -99,6 +108,7 @@ const Signup = () => {
         </p>
       </motion.div>
     </div>
+  </>
   );
 };
 

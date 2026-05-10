@@ -70,11 +70,26 @@ const Explore = () => {
 
   return (
     <div className="space-y-10 pb-20">
-      {/* Search Header */}
-      <div className="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 p-12 text-white shadow-2xl">
+      {/* Search Header with Cover Image */}
+      <div className="relative overflow-hidden rounded-[3rem] p-12 text-white shadow-2xl min-h-[400px] flex flex-col justify-center">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center"
+          style={{ backgroundImage: 'url(/explore_cover.png)' }}
+        />
+        {/* Overlay */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>
+        
         <div className="relative z-10 max-w-2xl">
-          <h1 className="text-5xl font-black mb-4 tracking-tight leading-tight">Where to next?</h1>
-          <p className="text-blue-100 font-medium text-lg mb-10">Discover your next destination and add it directly to your itinerary.</p>
+          <span className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-xs font-black tracking-widest uppercase shadow-lg">
+            Traveloop Discover
+          </span>
+          <h1 className="text-5xl font-black mb-4 tracking-tight leading-tight text-white drop-shadow-lg">
+            Experience the World with Traveloop
+          </h1>
+          <p className="text-gray-200 font-medium text-lg mb-10 drop-shadow-md">
+            Your premium journey companion. Discover incredible destinations, plan your ultimate itinerary, and embark on unforgettable adventures. Where to next?
+          </p>
           
           <div className="relative group">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
@@ -83,14 +98,10 @@ const Explore = () => {
               placeholder="Search cities, countries, or regions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-16 pr-6 py-6 rounded-3xl bg-white text-gray-900 border-none shadow-2xl focus:ring-4 focus:ring-blue-400/50 transition-all font-bold text-lg"
+              className="w-full pl-16 pr-6 py-6 rounded-3xl bg-white/90 backdrop-blur-xl text-gray-900 border-none shadow-2xl focus:ring-4 focus:ring-blue-400/50 transition-all font-bold text-lg focus:bg-white"
             />
           </div>
         </div>
-        
-        {/* Abstract Background Shapes */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 -mb-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
       </div>
 
       {/* Filters */}

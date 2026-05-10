@@ -1,27 +1,73 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, MapPin, DollarSign, Package, FileText, 
-  ChevronLeft, Plus, Clock, Trash2, CheckCircle2, Circle,
-  BarChart3, TrendingDown, AlertCircle,
-  Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
+  Plus, Clock, CheckCircle2, Circle,
+  TrendingDown, Search, X, Loader2, Users2, Wallet, Zap, 
+  TrendingUp, Plane, Cloud, Thermometer, ChevronRight, Info, Luggage, Map as MapIcon, MoreHorizontal, Send,
+  Edit3, Trash2, AlertCircle, BarChart3, Heart, ArrowUpRight
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import api from '../api/axios';
-import { predictTotalCost, getPackingSuggestions } from '../utils/AIUtility';
+
+// Helper functions for AI features
+const predictTotalCost = (trip: any, _currency: string) => {
+  const baseCost = trip.budgetEstimate || 1500;
+  // Simple logic to mock AI prediction
+  const stopFactor = (trip.stops?.length || 1) * 200;
+  return baseCost + stopFactor;
+};
+
+const getPackingSuggestions = (_trip: any) => {
+  return [
+    'Sunscreen (SPF 50+)', 
+    'Comfortable walking shoes', 
+    'Portable power bank', 
+    'First aid kit', 
+    'Travel adapter', 
+    'Lightweight rain jacket'
+  ];
+};
+
+// Fix Leaflet icon issue by using CDN URLs to avoid build-time conflicts
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
+// Mock coordinates for demonstration
+const CITY_COORDS: any = {
+  'Kathmandu': [27.7172, 85.3240],
+  'Pokhara': [28.2096, 83.9856],
+  'Chitwan': [27.5333, 84.4500],
+  'Everest': [27.9881, 86.9250],
+  'Paris': [48.8566, 2.3522],
+  'London': [51.5074, -0.1278],
+  'Rome': [41.9028, 12.4964],
+  'Tokyo': [35.6762, 139.6503],
+  'Delhi': [28.6139, 77.2090],
+  'Dhaka': [23.8103, 90.4125],
+};
 
 const TripDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [trip, setTrip] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('itinerary');
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('Overview');
 
   const fetchTrip = async () => {
     try {
       const response = await api.get(`/trips/${id}`);
       setTrip(response.data);
+      const userStr = localStorage.getItem('user');
+      if (userStr) setUser(JSON.parse(userStr));
     } catch (err) {
       console.error('Failed to fetch trip', err);
     } finally {
@@ -33,101 +79,370 @@ const TripDetails = () => {
     fetchTrip();
   }, [id]);
 
-  if (loading) return <div className="text-center py-20 flex flex-col items-center gap-4"><div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div><p className="font-bold text-gray-500">Loading your adventure...</p></div>;
+  if (loading) return <LoadingScreen />;
   if (!trip) return <div className="text-center py-20">Trip not found</div>;
 
-  const tabs = [
-    { id: 'itinerary', label: 'Itinerary', icon: Calendar },
-    { id: 'budget', label: 'Budget', icon: DollarSign },
-    { id: 'fund', label: 'Travel Fund', icon: Wallet },
-    { id: 'packing', label: 'Checklist', icon: Package },
-    { id: 'notes', label: 'Journal', icon: FileText },
-  ];
+  const totalBudget = trip.budgetEstimate || 1800;
+  const currentSpend = trip.stops?.reduce((acc: number, s: any) => 
+    acc + (s.activities?.reduce((sum: number, a: any) => sum + (a.cost || 0), 0) || 0), 0
+  ) || 450;
+  const spendPercentage = Math.round((currentSpend / totalBudget) * 100);
+
+  const daysLeft = Math.ceil((new Date(trip.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+  const tabs = ['Overview', 'Itinerary', 'Budget', 'Packing', 'Journal', 'Fund'];
 
   return (
-    <div className="space-y-6 pb-20">
-      <button 
-        onClick={() => navigate('/trips')}
-        className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium transition-colors"
-      >
-        <ChevronLeft className="w-5 h-5" />
-        Back to My Trips
-      </button>
+    <div className="space-y-8 pb-20 mt-24">
+      {/* Tab Navigation */}
+      <div className="flex flex-wrap gap-2 bg-white/50 backdrop-blur-md p-2 rounded-[2rem] border border-white/20 w-fit mx-auto mb-8">
+        {tabs.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-8 py-3 rounded-2xl text-sm font-black transition-all ${
+              activeTab === tab 
+                ? 'bg-gray-900 text-white shadow-xl scale-105' 
+                : 'text-gray-400 hover:text-gray-900 hover:bg-white'
+            }`}
+          >
+            {tab.toUpperCase()}
+          </button>
+        ))}
+      </div>
 
-      <div className="relative h-80 rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white">
-        <img 
-          src={trip.coverPhotoUrl || `https://source.unsplash.com/random/1200x400?travel,${trip.name}`} 
-          alt={trip.name} 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-        <div className="absolute bottom-8 left-8 text-white">
-          <div className="flex items-center gap-2 mb-2">
-             <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-lg ${trip.type === 'International' ? 'bg-purple-600 text-white' : 'bg-blue-600 text-white'}`}>
-                {trip.type || 'National'}
-             </span>
+      {activeTab === 'Overview' && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+      {/* Hero Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1 h-[280px] rounded-[2.5rem] overflow-hidden relative group shadow-2xl">
+           <img 
+            src={trip.coverPhotoUrl || `https://images.unsplash.com/photo-1544735749-142dbb77f105?q=80&w=2070&auto=format&fit=crop`} 
+            alt={trip.name} 
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+          <div className="absolute top-6 left-6 right-6 flex justify-between items-start">
+             <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest border border-white/20">YOUR TRIP</span>
+             <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white border border-white/10 cursor-pointer">
+                <MapPin className="w-3 h-3 text-red-500" />
+                <span>Nepal</span>
+                <MoreHorizontal className="w-3 h-3 ml-1" />
+             </div>
           </div>
-          <h1 className="text-5xl font-black mb-2 tracking-tight">{trip.name}</h1>
-          <div className="flex flex-wrap items-center gap-4 text-sm font-bold opacity-90 mt-4">
-            <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
-              <Calendar className="w-4 h-4 text-blue-300" /> {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
-            </span>
-            <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
-              <MapPin className="w-4 h-4 text-blue-300" /> {trip.stops?.length || 0} destinations
-            </span>
-            {trip.companionType && (
-              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
-                <Users2 className="w-4 h-4 text-purple-300" /> {trip.companionType}
-              </span>
-            )}
-            {trip.mood && (
-              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 capitalize">
-                <TrendingUp className="w-4 h-4 text-amber-300" /> {trip.mood}
-              </span>
-            )}
+          <div className="absolute bottom-6 left-6 right-6">
+             <p className="text-white/80 font-bold mb-1">Hey {user?.name.split(' ')[0] || 'Traveler'}! 👋</p>
+             <h1 className="text-2xl font-black text-white leading-tight mb-2">Welcome To Your {trip.name}!</h1>
+             <p className="text-white/50 text-[10px] italic">"The Mountains Are Calling, And I Must Go." – John Muir</p>
           </div>
+        </div>
+
+        {/* Budget Widget */}
+        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-gray-100 flex flex-col justify-between group">
+           <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                 <Wallet className="w-5 h-5 text-gray-900" />
+                 <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">BUDGET</h3>
+              </div>
+              <button className="text-gray-300 hover:text-gray-900 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+           </div>
+           <div className="flex items-center gap-6">
+              <div className="w-32 h-32 relative">
+                 <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                       <Pie 
+                        data={[
+                          { name: 'Spend', value: currentSpend },
+                          { name: 'Remaining', value: totalBudget - currentSpend }
+                        ]} 
+                        innerRadius={35} 
+                        outerRadius={50} 
+                        paddingAngle={5} 
+                        dataKey="value"
+                        stroke="none"
+                       >
+                          <Cell fill="#0d9488" />
+                          <Cell fill="#fbbf24" />
+                       </Pie>
+                    </PieChart>
+                 </ResponsiveContainer>
+                 <div className="absolute inset-0 flex items-center justify-center flex-col">
+                    <span className="text-lg font-black text-gray-900">{spendPercentage}%</span>
+                 </div>
+              </div>
+              <div className="space-y-2 flex-1">
+                 <div className="flex items-center justify-between text-[10px] font-black">
+                    <span className="text-gray-400">TOTAL</span>
+                    <span className="text-gray-900">${totalBudget}</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-teal-600"></div>
+                    <span className="text-[10px] font-bold text-gray-500">Budget</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                    <span className="text-[10px] font-bold text-gray-500">Spend</span>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* Expenses Widget */}
+        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-gray-100 flex flex-col group">
+           <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                 <Luggage className="w-5 h-5 text-gray-900" />
+                 <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">EXPENSES</h3>
+              </div>
+              <button className="text-gray-300 hover:text-gray-900 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+           </div>
+           <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar">
+              <ExpenseItem icon="🎟️" label="Air ticket" amount={230} />
+              <ExpenseItem icon="🚕" label="Taxi rent" amount={10} />
+              <ExpenseItem icon="🍔" label="King burger" amount={12} />
+              <ExpenseItem icon="🥾" label="Trekking gear" amount={95} />
+           </div>
+           <button className="mt-4 flex items-center justify-center gap-2 py-3 bg-gray-100 hover:bg-gray-200 transition-all rounded-xl text-xs font-black text-gray-900">
+              <Plus className="w-4 h-4" /> Record
+           </button>
+        </div>
+
+        {/* Readiness Widget */}
+        <div className="bg-amber-400 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden flex flex-col justify-between group">
+           <div className="flex justify-between items-center relative z-10">
+              <div className="flex items-center gap-2">
+                 <Zap className="w-5 h-5 text-gray-900" />
+                 <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">READINESS</h3>
+              </div>
+              <button className="text-gray-900/40 hover:text-gray-900 transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+           </div>
+           <div className="relative flex items-center justify-center my-4 z-10">
+              <div className="w-32 h-32 rounded-full border-[12px] border-white/20 flex items-center justify-center flex-col">
+                 <span className="text-[10px] font-black text-gray-900/60 uppercase tracking-widest">Days left</span>
+                 <span className="text-4xl font-black text-gray-900">{daysLeft > 0 ? daysLeft : 0}</span>
+              </div>
+              <div className="absolute w-32 h-32 rounded-full border-[12px] border-teal-800 border-t-transparent border-l-transparent rotate-45"></div>
+           </div>
+           <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all"></div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 p-1.5 bg-gray-100 rounded-[1.8rem] w-fit shadow-inner">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-8 py-3.5 rounded-[1.4rem] font-bold transition-all duration-300 ${
-                activeTab === tab.id 
-                  ? 'bg-white text-blue-600 shadow-xl scale-105' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Map and Info Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Map Widget */}
+        <div className="lg:col-span-4 bg-white rounded-[3rem] p-8 shadow-xl border border-gray-100 flex flex-col h-[500px]">
+           <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                 <MapIcon className="w-5 h-5 text-gray-900" />
+                 <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">DESTINATIONS</h3>
+              </div>
+              <button className="p-2 bg-gray-50 rounded-xl text-gray-400 hover:text-gray-900 transition-all"><Search className="w-4 h-4" /></button>
+           </div>
+           <div className="flex-1 rounded-[2rem] overflow-hidden relative shadow-inner border border-gray-50">
+              <MapContainer center={[27.7172, 85.3240]} zoom={6} scrollWheelZoom={false}>
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                {trip.stops?.map((stop: any) => {
+                  const coords = CITY_COORDS[stop.cityName] || [27.7, 85.3];
+                  return (
+                    <Marker key={stop.id} position={coords}>
+                      <Popup>
+                        <div className="font-bold">{stop.cityName}</div>
+                        <div className="text-xs text-gray-500">{stop.country}</div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+                {trip.stops?.length > 1 && (
+                  <Polyline 
+                    positions={trip.stops.map((s: any) => CITY_COORDS[s.cityName] || [27.7, 85.3])} 
+                    color="#0d9488" 
+                    weight={3} 
+                    dashArray="10, 10" 
+                  />
+                )}
+              </MapContainer>
+              <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl z-[1000] border border-white">
+                 <div className="space-y-2">
+                    {trip.stops?.map((stop: any) => (
+                      <div key={stop.id} className="flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-teal-600 ring-4 ring-teal-50"></div>
+                         <span className="text-xs font-black text-gray-800">{stop.cityName}</span>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+           </div>
+        </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="min-h-[500px]"
-        >
-          {activeTab === 'itinerary' && <ItineraryTab trip={trip} onUpdate={fetchTrip} />}
-          {activeTab === 'budget' && <BudgetTab trip={trip} currency={trip.currency || 'INR'} onUpdate={fetchTrip} />}
-          {activeTab === 'fund' && <FundTab trip={trip} onUpdate={fetchTrip} />}
-          {activeTab === 'packing' && <PackingTab trip={trip} onUpdate={fetchTrip} />}
-          {activeTab === 'notes' && <JournalTab trip={trip} onUpdate={fetchTrip} />}
-        </motion.div>
-      </AnimatePresence>
-    </div>
+        {/* Middle Column */}
+        <div className="lg:col-span-4 space-y-6">
+           {/* Weather Widget */}
+           <div className="bg-blue-200 rounded-[3rem] p-8 shadow-xl border border-blue-100 flex items-center justify-between group overflow-hidden relative">
+              <div className="relative z-10">
+                 <div className="flex items-center gap-2 mb-4">
+                    <MapPin className="w-4 h-4 text-gray-900" />
+                    <h3 className="font-black text-gray-900 uppercase tracking-widest text-[10px]">KATHMANDU</h3>
+                    <button className="text-gray-900/40 hover:text-gray-900"><MoreHorizontal className="w-3 h-3" /></button>
+                 </div>
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                       <Thermometer className="w-5 h-5 text-red-500" />
+                       <div>
+                          <p className="text-[10px] font-bold text-gray-500">Temperature</p>
+                          <p className="text-xs font-black">H:10° L:14° C</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                       <Cloud className="w-5 h-5 text-gray-500" />
+                       <div>
+                          <p className="text-[10px] font-bold text-gray-500">Weather</p>
+                          <p className="text-xs font-black">Mostly cloudy</p>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+              <div className="text-right relative z-10">
+                 <span className="text-7xl font-black text-gray-900">13°</span>
+              </div>
+              <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/20 rounded-full blur-3xl group-hover:scale-125 transition-transform"></div>
+           </div>
+
+           {/* Flight Widget */}
+           <div className="bg-purple-900 rounded-[3rem] p-8 shadow-xl text-white flex flex-col group overflow-hidden relative">
+              <div className="flex justify-between items-center mb-6 relative z-10">
+                 <div className="flex items-center gap-2">
+                    <Plane className="w-5 h-5 text-white" />
+                    <h3 className="font-black text-white/60 uppercase tracking-widest text-[10px]">FLIGHT</h3>
+                 </div>
+                 <button className="text-white/20 hover:text-white transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+              </div>
+              <div className="space-y-6 relative z-10">
+                 <div>
+                    <p className="text-[10px] font-bold text-purple-300">12 May, 2:30PM</p>
+                    <div className="flex items-center justify-between">
+                       <span className="text-lg font-black tracking-tight">Dhaka</span>
+                       <Plane className="w-5 h-5 rotate-90 text-purple-400" />
+                       <span className="text-lg font-black tracking-tight">Kathmandu</span>
+                    </div>
+                 </div>
+                 <div className="h-[1px] bg-white/10 w-full"></div>
+                 <div>
+                    <p className="text-[10px] font-bold text-purple-300">22 May, 9:30AM</p>
+                    <div className="flex items-center justify-between">
+                       <span className="text-lg font-black tracking-tight">Kathmandu</span>
+                       <Plane className="w-5 h-5 rotate-[270deg] text-purple-400" />
+                       <span className="text-lg font-black tracking-tight">Delhi</span>
+                    </div>
+                 </div>
+              </div>
+              <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>
+           </div>
+
+           {/* Days & Activity List */}
+           <div className="bg-orange-50 rounded-[3rem] p-8 shadow-xl border border-orange-100 flex-1 flex flex-col">
+              <div className="flex justify-between items-center mb-6">
+                 <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">DAYS & ACTIVITY</h3>
+                 <button className="p-2 bg-gray-200/50 rounded-xl text-gray-400 hover:text-gray-900 transition-all"><MoreHorizontal className="w-4 h-4" /></button>
+              </div>
+              <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar max-h-[160px]">
+                 <ActivityRow day={1} title="Arrival in Kathmandu" desc="Arrive in Kathmandu, the capital city of Nepal. Check into your accommodation and rest after your journey." />
+                 <ActivityRow day={2} title="Kathmandu Sightseeing" desc="Explore the ancient temples and markets of the valley." />
+                 <ActivityRow day={3} title="Bhaktapur and Nagarkot" desc="Witness the heritage of Bhaktapur and sunset at Nagarkot." />
+              </div>
+           </div>
+        </div>
+
+        {/* Right Column - Packing List */}
+        <div className="lg:col-span-4 bg-gray-900 rounded-[3rem] p-8 shadow-2xl text-white flex flex-col h-full min-h-[500px]">
+           <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-2">
+                 <FileText className="w-5 h-5 text-white/60" />
+                 <h3 className="font-black text-white uppercase tracking-widest text-xs">PACKING LIST</h3>
+              </div>
+              <button className="text-white/20 hover:text-white transition-colors"><MoreHorizontal className="w-4 h-4" /></button>
+           </div>
+           <div className="space-y-6 flex-1 overflow-y-auto no-scrollbar mb-8">
+              <PackingItem label="Backpack" note="Add Note" />
+              <PackingItem label="Camera & GoPro" />
+              <PackingItem label="Laptop & Charger" />
+              <PackingItem label="Hot water button" />
+              <PackingItem label="Medical Aid" />
+              <PackingItem label="Winter Jacket" />
+           </div>
+           <button className="w-full py-5 bg-teal-800 hover:bg-teal-700 transition-all rounded-[2rem] text-sm font-black flex items-center justify-center gap-2 shadow-xl shadow-teal-900/50">
+              <Plus className="w-5 h-5 text-orange-500" /> New Reminder
+           </button>
+        </div>
+      </div>
+    </motion.div>
+  )}
+
+  {activeTab === 'Itinerary' && <ItineraryTab trip={trip} onUpdate={fetchTrip} />}
+  {activeTab === 'Budget' && <BudgetTab trip={trip} currency={trip.currency || 'USD'} />}
+  {activeTab === 'Packing' && <PackingTab trip={trip} onUpdate={fetchTrip} />}
+  {activeTab === 'Journal' && <JournalTab trip={trip} onUpdate={fetchTrip} />}
+  {activeTab === 'Fund' && <FundTab trip={trip} onUpdate={fetchTrip} />}
+</div>
   );
 };
+
+// --- Sub-components for modern UI ---
+
+const ExpenseItem = ({ icon, label, amount }: any) => (
+  <div className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 transition-all group cursor-pointer">
+    <div className="flex items-center gap-4">
+      <span className="text-xl group-hover:scale-125 transition-transform">{icon}</span>
+      <span className="text-xs font-bold text-gray-700">{label}</span>
+    </div>
+    <span className="text-xs font-black text-gray-900">${amount}</span>
+  </div>
+);
+
+const ActivityRow = ({ day, title, desc }: any) => (
+  <div className="flex gap-4 group cursor-pointer">
+    <div className="bg-orange-200/50 px-3 py-1 rounded-full h-fit">
+      <span className="text-[10px] font-black text-orange-800 whitespace-nowrap">Day {day}</span>
+    </div>
+    <div className="flex-1 pb-4 border-b border-orange-200/50 group-last:border-none">
+       <div className="flex justify-between items-start">
+          <h4 className="text-xs font-black text-gray-900 mb-1">{title}</h4>
+          <Info className="w-3 h-3 text-gray-300 group-hover:text-gray-900 transition-colors" />
+       </div>
+       <p className="text-[9px] text-gray-500 font-medium leading-relaxed line-clamp-2 group-hover:line-clamp-none transition-all">{desc}</p>
+    </div>
+  </div>
+);
+
+const PackingItem = ({ label, note }: any) => (
+  <div className="flex items-center justify-between group cursor-pointer">
+     <div className="flex items-center gap-4">
+        <div className="w-5 h-5 rounded-full border-2 border-white/20 group-hover:border-teal-500 transition-colors flex items-center justify-center">
+           <div className="w-2.5 h-2.5 rounded-full bg-teal-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </div>
+        <div>
+           <p className="text-xs font-bold text-white/80 group-hover:text-white transition-colors">{label}</p>
+           {note && <p className="text-[10px] text-white/30 font-medium">{note}</p>}
+        </div>
+     </div>
+     <button className="opacity-0 group-hover:opacity-100 p-2 text-white/40 hover:text-white transition-all"><Info className="w-4 h-4" /></button>
+  </div>
+);
+
+const LoadingScreen = () => (
+  <div className="fixed inset-0 bg-background flex flex-col items-center justify-center z-50">
+     <div className="relative">
+        <div className="w-24 h-24 border-4 border-gray-100 rounded-full"></div>
+        <div className="absolute inset-0 w-24 h-24 border-4 border-teal-800 border-t-transparent rounded-full animate-spin"></div>
+        <Plane className="absolute inset-0 m-auto w-8 h-8 text-teal-800 animate-pulse" />
+     </div>
+     <p className="mt-8 text-gray-400 font-black uppercase tracking-[0.3em] text-xs">Preparing Adventure</p>
+  </div>
+);
+
+// export default TripDetails; (Removed duplicate export)
 
 // --- SUB-COMPONENTS ---
 

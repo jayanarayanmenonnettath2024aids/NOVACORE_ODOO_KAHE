@@ -107,8 +107,16 @@ const Dashboard = () => {
   return (
     <>
       <div className="space-y-12 pb-20">
-        {/* AI Smart Hub Header */}
-        <div className="bg-gray-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
+        {/* AI Smart Hub Header with Cover Image */}
+        <div className="relative rounded-[3rem] p-10 text-white shadow-2xl overflow-hidden min-h-[400px] flex flex-col justify-center">
+          {/* Background Image */}
+          <div 
+            className="absolute inset-0 z-0 bg-cover bg-center"
+            style={{ backgroundImage: 'url(/explore_cover.png)' }}
+          />
+          {/* Overlay */}
+          <div className="absolute inset-0 z-0 bg-gradient-to-r from-gray-900/95 via-gray-900/80 to-transparent"></div>
+          
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center gap-2 mb-6">
@@ -117,37 +125,36 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm font-black uppercase tracking-[0.3em] text-blue-400">AI SMART HUB</span>
               </div>
-              <h1 className="text-6xl font-black mb-6 tracking-tight leading-none">Welcome back,<br/><span className="text-blue-500">Explorer!</span></h1>
-              <p className="text-gray-400 text-xl font-medium max-w-md">Your AI travel assistant has analyzed your upcoming plans and found new optimizations.</p>
+              <h1 className="text-6xl font-black mb-6 tracking-tight leading-none text-white drop-shadow-lg">Welcome back,<br/><span className="text-blue-400 drop-shadow-lg">Explorer!</span></h1>
+              <p className="text-gray-200 text-xl font-medium max-w-md drop-shadow-md">Your AI travel assistant has analyzed your upcoming plans and found new optimizations.</p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
-               <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] hover:bg-white/10 transition-all group cursor-pointer" onClick={() => nextTrip && navigate(`/trips/${nextTrip.id}`)}>
+               <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-[2rem] hover:bg-white/20 transition-all group cursor-pointer shadow-lg" onClick={() => nextTrip && navigate(`/trips/${nextTrip.id}`)}>
                   <div className="flex justify-between items-start mb-4">
-                     <div className="p-3 bg-blue-600/20 rounded-xl text-blue-400 group-hover:scale-110 transition-transform"><Calendar className="w-6 h-6" /></div>
-                     <span className="text-[10px] font-black text-blue-400">NEXT TRIP</span>
+                     <div className="p-3 bg-blue-500/30 rounded-xl text-blue-300 group-hover:scale-110 transition-transform"><Calendar className="w-6 h-6" /></div>
+                     <span className="text-[10px] font-black text-blue-300">NEXT TRIP</span>
                   </div>
                   <p className="text-2xl font-black mb-1 line-clamp-1">{nextTrip?.name || 'N/A'}</p>
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Planning Ready</p>
+                  <p className="text-xs text-gray-300 font-bold uppercase tracking-widest">Planning Ready</p>
                </div>
-               <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] hover:bg-white/10 transition-all group">
+               <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-[2rem] hover:bg-white/20 transition-all group shadow-lg">
                   <div className="flex justify-between items-start mb-4">
-                     <div className="p-3 bg-purple-600/20 rounded-xl text-purple-400 group-hover:scale-110 transition-transform"><TrendingUp className="w-6 h-6" /></div>
-                     <span className="text-[10px] font-black text-purple-400">HEALTH</span>
+                     <div className="p-3 bg-purple-500/30 rounded-xl text-purple-300 group-hover:scale-110 transition-transform"><TrendingUp className="w-6 h-6" /></div>
+                     <span className="text-[10px] font-black text-purple-300">HEALTH</span>
                   </div>
                   <p className="text-2xl font-black mb-1">85%</p>
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Efficiency</p>
+                  <p className="text-xs text-gray-300 font-bold uppercase tracking-widest">Efficiency</p>
                </div>
-               <div className="col-span-2 bg-gradient-to-r from-blue-600/20 to-transparent border border-blue-500/20 p-6 rounded-[2rem] flex items-center justify-between">
+               <div className="col-span-2 bg-gradient-to-r from-blue-600/40 to-transparent backdrop-blur-md border border-blue-400/30 p-6 rounded-[2rem] flex items-center justify-between shadow-lg">
                   <div>
-                     <p className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">AI INSIGHT</p>
-                     <p className="font-bold text-gray-300 italic">"Save up to 12% by booking your next stay on a weekday."</p>
+                     <p className="text-xs font-black text-blue-300 uppercase tracking-widest mb-1">AI INSIGHT</p>
+                     <p className="font-bold text-gray-100 italic">"Save up to 12% by booking your next stay on a weekday."</p>
                   </div>
-                  <button className="p-4 bg-blue-600 rounded-2xl text-white hover:scale-110 transition-all shadow-xl shadow-blue-500/50"><ChevronRight className="w-6 h-6" /></button>
+                  <button className="p-4 bg-blue-600 rounded-2xl text-white hover:scale-110 transition-all shadow-xl shadow-blue-500/50 border border-blue-400/50"><ChevronRight className="w-6 h-6" /></button>
                </div>
             </div>
           </div>
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px]"></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
