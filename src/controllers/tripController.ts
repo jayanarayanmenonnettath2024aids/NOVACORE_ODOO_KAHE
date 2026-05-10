@@ -382,3 +382,60 @@ export const cloneTrip = async (req: Request, res: Response) => {
   }
 };
 
+export const addContribution = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { amount, message } = req.body;
+    const userId = req.user!.userId;
+    
+    // Get user name and trip for validation
+    const [user, trip] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId } }),
+      prisma.trip.findUnique({ where: { id } })
+    ]);
+
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+
+    const newTotal = (trip.currentSavings || 0) + parseFloat(amount);
+    if (newTotal > (trip.budgetEstimate || 0)) {
+      return res.status(400).json({ error: `Contribution exceeds the remaining budget of ${(trip.budgetEstimate || 0) - (trip.currentSavings || 0)}` });
+    }
+
+    const [contribution] = await prisma.$transaction([
+      prisma.contribution.create({
+        data: {
+          tripId: id,
+          userId,
+          userName: user?.name || 'Anonymous',
+          amount: parseFloat(amount),
+          message
+        }
+      }),
+      prisma.trip.update({
+        where: { id },
+        data: {
+          currentSavings: { increment: parseFloat(amount) }
+        }
+      })
+    ]);
+
+    res.status(201).json(contribution);
+  } catch (error) {
+    console.error('Contribution error:', error);
+    res.status(500).json({ error: 'Failed to add contribution' });
+  }
+};
+
+export const getContributions = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const contributions = await prisma.contribution.findMany({
+      where: { tripId: id },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(contributions);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch contributions' });
+  }
+};
+

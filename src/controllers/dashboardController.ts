@@ -5,14 +5,15 @@ export const getDashboardData = async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
 
-    const [trips, user, publicTrips] = await Promise.all([
+    const [trips, user, publicTrips, manifestGoals] = await Promise.all([
       prisma.trip.findMany({
         where: { userId },
         orderBy: { startDate: 'asc' },
         include: { stops: true, expenses: true, packingItems: true, notes: true }
       }),
       prisma.user.findUnique({ where: { id: userId } }),
-      prisma.trip.findMany({ where: { isPublic: true }, take: 5, include: { stops: true } })
+      prisma.trip.findMany({ where: { isPublic: true }, take: 5, include: { stops: true } }),
+      prisma.manifestGoal.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
     ]);
 
     const packingItems = trips.flatMap(t => t.packingItems);
@@ -59,6 +60,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
       recentTrips: recentTrips.slice(0, 3),
       ongoingTrips,
       notifications,
+      manifestGoals,
       aiReminders: reminders,
       userStats: {
         totalTrips: trips.length,
@@ -81,5 +83,66 @@ export const getDashboardData = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching dashboard:', error);
     res.status(500).json({ error: 'Failed to fetch dashboard data' });
+  }
+};
+
+export const createManifestGoal = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const { title, targetAmount, currency } = req.body;
+    
+    const goal = await prisma.manifestGoal.create({
+      data: {
+        userId,
+        title,
+        targetAmount: parseFloat(targetAmount),
+        currency: currency || 'INR'
+      }
+    });
+    
+    res.status(201).json(goal);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create manifestation goal' });
+  }
+};
+
+export const updateManifestGoal = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { addAmount } = req.body;
+    
+    const currentGoal = await prisma.manifestGoal.findUnique({ where: { id } });
+    if (!currentGoal) return res.status(404).json({ error: 'Goal not found' });
+    
+    const newAmount = currentGoal.savedAmount + parseFloat(addAmount);
+    if (newAmount > currentGoal.targetAmount) {
+      return res.status(400).json({ error: `Contribution exceeds the remaining target of ${currentGoal.targetAmount - currentGoal.savedAmount}` });
+    }
+    
+    const isCompleted = newAmount >= currentGoal.targetAmount;
+    
+    const goal = await prisma.manifestGoal.update({
+      where: { id },
+      data: { 
+        savedAmount: newAmount,
+        isCompleted
+      }
+    });
+
+    if (isCompleted && !currentGoal.isCompleted) {
+      // Create notification for reaching the goal
+      await prisma.notification.create({
+        data: {
+          userId: currentGoal.userId,
+          title: '🎯 Goal Achieved!',
+          message: `Congratulations! You've successfully manifested your budget for "${currentGoal.title}". Time to book your adventure!`,
+          type: 'success'
+        }
+      });
+    }
+    
+    res.json(goal);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update manifestation goal' });
   }
 };

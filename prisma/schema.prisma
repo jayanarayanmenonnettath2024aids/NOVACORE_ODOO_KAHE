@@ -19,6 +19,7 @@ model User {
   updatedAt         DateTime           @updatedAt
   trips             Trip[]
   savedDestinations SavedDestination[]
+  manifestGoals     ManifestGoal[]
 }
 
 model Trip {
@@ -35,6 +36,7 @@ model Trip {
   companionType  String        @default("Solo") // Solo, Couple, Friends, Family, Colleague
   currency       String        @default("INR")
   budgetEstimate Float?
+  currentSavings Float         @default(0)
   travelPace     String        @default("Moderate") // Relaxed, Moderate, Packed
   mood           String?       // Adventure, Food, Luxury, Nature, Culture
   transportType  String?       // Flight, Train, Bus, Road Trip
@@ -47,6 +49,18 @@ model Trip {
   expenses       Expense[]
   packingItems   PackingItem[]
   notes          Note[]
+  contributions  Contribution[]
+}
+
+model Contribution {
+  id        String   @id @default(uuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  userId    String
+  userName  String
+  amount    Float
+  message   String?
+  createdAt DateTime @default(now())
 }
 
 model Stop {
@@ -118,4 +132,17 @@ model Notification {
   type      String   @default("info") // info, success, warning, alert
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model ManifestGoal {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String   // e.g., "Europe 2027"
+  targetAmount Float
+  savedAmount  Float    @default(0)
+  currency     String   @default("INR")
+  isCompleted  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

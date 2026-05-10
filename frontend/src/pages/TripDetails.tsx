@@ -5,12 +5,11 @@ import {
   Calendar, MapPin, DollarSign, Package, FileText, 
   ChevronLeft, Plus, Clock, Trash2, CheckCircle2, Circle,
   BarChart3, TrendingDown, AlertCircle,
-  Search, X, Edit3, Loader2, Users2
+  Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import api from '../api/axios';
 import { predictTotalCost, getPackingSuggestions } from '../utils/AIUtility';
-import { TrendingUp } from 'lucide-react';
 
 const TripDetails = () => {
   const { id } = useParams();
@@ -38,9 +37,10 @@ const TripDetails = () => {
   if (!trip) return <div className="text-center py-20">Trip not found</div>;
 
   const tabs = [
-    { id: 'itinerary', label: 'Itinerary Builder', icon: Calendar },
+    { id: 'itinerary', label: 'Itinerary', icon: Calendar },
     { id: 'budget', label: 'Budget', icon: DollarSign },
-    { id: 'packing', label: 'Packing', icon: Package },
+    { id: 'fund', label: 'Travel Fund', icon: Wallet },
+    { id: 'packing', label: 'Checklist', icon: Package },
     { id: 'notes', label: 'Journal', icon: FileText },
   ];
 
@@ -119,7 +119,8 @@ const TripDetails = () => {
           className="min-h-[500px]"
         >
           {activeTab === 'itinerary' && <ItineraryTab trip={trip} onUpdate={fetchTrip} />}
-          {activeTab === 'budget' && <BudgetTab trip={trip} currency={trip.currency || 'USD'} onUpdate={fetchTrip} />}
+          {activeTab === 'budget' && <BudgetTab trip={trip} currency={trip.currency || 'INR'} onUpdate={fetchTrip} />}
+          {activeTab === 'fund' && <FundTab trip={trip} onUpdate={fetchTrip} />}
           {activeTab === 'packing' && <PackingTab trip={trip} onUpdate={fetchTrip} />}
           {activeTab === 'notes' && <JournalTab trip={trip} onUpdate={fetchTrip} />}
         </motion.div>
@@ -677,6 +678,176 @@ const JournalTab = ({ trip, onUpdate }: any) => {
                     defaultValue={editNote?.content || ""}
                     placeholder="Describe your day, save a confirmation number, or jot down a memory..."
                     className="w-full px-6 py-4 rounded-[2rem] bg-gray-50 border-none focus:ring-4 focus:ring-blue-100 transition-all font-medium text-gray-700 text-lg resize-none"
+                  />
+               </div>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const FundTab = ({ trip, onUpdate }: any) => {
+  const [showAddFund, setShowAddFund] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [contributions, setContributions] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchContributions();
+  }, [trip.id]);
+
+  const fetchContributions = async () => {
+    try {
+      const res = await api.get(`/trips/${trip.id}/contributions`);
+      setContributions(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleContribute = async () => {
+    if (!amount) return;
+    const remaining = (trip.budgetEstimate || 0) - (trip.currentSavings || 0);
+    if (parseFloat(amount) > remaining) {
+      alert(`Manifestation successful! You only need ${trip.currency} ${remaining.toLocaleString()} to reach your budget goal.`);
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.post(`/trips/${trip.id}/contributions`, { amount, message });
+      setAmount('');
+      setMessage('');
+      setShowAddFund(false);
+      onUpdate();
+      fetchContributions();
+    } catch (err) {
+      alert('Failed to add funds');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const progress = Math.min(100, (trip.currentSavings / (trip.budgetEstimate || 1)) * 100);
+
+  return (
+    <div className="space-y-10">
+      {/* Progress Header */}
+      <div className="bg-gray-900 rounded-[3rem] p-12 text-white shadow-2xl relative overflow-hidden">
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div>
+             <div className="flex items-center gap-2 mb-4 text-blue-400">
+                <Wallet className="w-6 h-6" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Travel Fund</span>
+             </div>
+             <h2 className="text-5xl font-black mb-2 tracking-tight">{trip.currency} {trip.currentSavings?.toLocaleString()}</h2>
+             <p className="text-gray-400 font-bold">manifested towards your {trip.currency} {trip.budgetEstimate?.toLocaleString()} goal</p>
+          </div>
+          
+          <div className="space-y-6">
+             <div className="flex justify-between items-end">
+                <span className="text-3xl font-black">{Math.round(progress)}%</span>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">FUNDED</span>
+             </div>
+             <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  className="h-full bg-blue-600 rounded-full shadow-[0_0_20px_rgba(37,99,235,0.6)]"
+                />
+             </div>
+             <button 
+               onClick={() => setShowAddFund(true)}
+               className="w-full bg-blue-600 hover:bg-blue-700 py-5 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-500/20"
+             >
+                <Plus className="w-6 h-6" /> ADD MONEY
+             </button>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+         <div className="lg:col-span-2 space-y-8">
+            <h3 className="text-3xl font-black text-gray-900 tracking-tight">Contribution History</h3>
+            <div className="space-y-4">
+               {contributions.map((c: any) => (
+                 <div key={c.id} className="bg-white p-6 rounded-[2.5rem] border border-gray-100 flex items-center justify-between group hover:shadow-xl transition-all">
+                    <div className="flex items-center gap-6">
+                       <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+                          <Heart className="w-6 h-6" />
+                       </div>
+                       <div>
+                          <p className="font-black text-gray-900 text-lg">{c.userName}</p>
+                          <p className="text-gray-400 font-bold text-xs italic">"{c.message || 'Saving for the adventure!'}"</p>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-xl font-black text-blue-600">+{trip.currency} {c.amount.toLocaleString()}</p>
+                       <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">
+                          {new Date(c.createdAt).toLocaleDateString()}
+                       </p>
+                    </div>
+                 </div>
+               ))}
+               {contributions.length === 0 && (
+                 <div className="text-center py-20 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
+                    <Wallet className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                    <p className="text-gray-400 font-black">No contributions yet. Be the first to start the fund!</p>
+                 </div>
+               )}
+            </div>
+         </div>
+
+         <div className="space-y-8">
+            <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-gray-50">
+               <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+                     <Zap className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl font-black text-gray-900 tracking-tight">AI Financial Tip</h3>
+               </div>
+               <p className="text-gray-600 font-medium leading-relaxed italic">
+                  "Based on your current savings rate, you'll reach your goal in approximately {Math.ceil(((trip.budgetEstimate || 1000) - trip.currentSavings) / (contributions.length > 0 ? (contributions[0].amount || 100) : 1000))} weeks. Inviting more collaborators can speed this up by 40%!"
+               </p>
+            </section>
+            
+            <section className="bg-gradient-to-br from-indigo-600 to-blue-700 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+               <div className="relative z-10">
+                  <h3 className="text-2xl font-black mb-4">Collaborative Power</h3>
+                  <p className="text-blue-100 text-sm font-medium mb-6">Invite your travel buddies to contribute. All funds are tracked transparently for everyone to see.</p>
+                  <button className="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest hover:gap-4 transition-all">
+                     SHARE INVITE LINK <ArrowUpRight className="w-4 h-4" />
+                  </button>
+               </div>
+               <div className="absolute bottom-0 right-0 -mb-10 -mr-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            </section>
+         </div>
+      </div>
+
+      <AnimatePresence>
+        {showAddFund && (
+          <Modal title="Manifest Funds" onClose={() => setShowAddFund(false)} onSubmit={handleContribute} loading={loading}>
+            <div className="space-y-6">
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Contribution Amount ({trip.currency})</label>
+                  <input 
+                    type="number" 
+                    placeholder="e.g. 5000"
+                    className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-black text-2xl"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                  />
+               </div>
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Message (Optional)</label>
+                  <textarea 
+                    placeholder="Saving for our dream trip!"
+                    className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-medium text-gray-600 h-32"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
                   />
                </div>
             </div>

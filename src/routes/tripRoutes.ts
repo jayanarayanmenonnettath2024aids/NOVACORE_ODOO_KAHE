@@ -16,7 +16,9 @@ import {
   deletePackingItem,
   resetPackingItems,
   getPublicTrip,
-  cloneTrip
+  cloneTrip,
+  addContribution,
+  getContributions
 } from '../controllers/tripController';
 
 const router = Router();
@@ -44,5 +46,9 @@ router.post('/:tripId/packing', addPackingItem);
 router.put('/packing/:itemId', togglePackingItem);
 router.delete('/packing/:itemId', deletePackingItem);
 router.post('/:tripId/packing/reset', resetPackingItems);
+
+// Contributions
+router.post('/:id/contributions', addContribution);
+router.get('/:id/contributions', getContributions);
 
 export default router;
