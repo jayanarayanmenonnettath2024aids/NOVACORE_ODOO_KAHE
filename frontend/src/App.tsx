@@ -22,12 +22,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function AppContent() {
   const location = useLocation();
-  const isIntroPage = location.pathname === '/';
+  const isImmersivePage = ['/', '/login', '/signup'].includes(location.pathname);
 
-  if (isIntroPage) {
+  if (isImmersivePage) {
     return (
       <Routes>
         <Route path="/" element={<IntroVideo />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
     );
   }
