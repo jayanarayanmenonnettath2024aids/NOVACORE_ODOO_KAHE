@@ -7,12 +7,12 @@ const IntroVideo = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isExiting, setIsExiting] = useState(false);
 
-  // Transition and navigate to the dashboard
+  // Transition and navigate to the landing page
   const handleExit = () => {
     if (isExiting) return;
     setIsExiting(true);
     setTimeout(() => {
-      navigate('/dashboard');
+      navigate('/landing');
     }, 600); // smooth fade transition duration
   };
 

@@ -25,7 +25,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="flex items-center justify-start min-h-screen w-screen bg-[url('/auth-bg.png')] bg-cover bg-center bg-no-repeat pl-6 sm:pl-16 md:pl-28 pr-6 relative select-none overflow-hidden">
+    <div className="flex items-center justify-start min-h-screen w-full bg-[url('/auth-bg.png')] bg-cover bg-center bg-no-repeat bg-fixed pl-6 sm:pl-16 md:pl-28 pr-6 relative select-none overflow-hidden">
       {/* Brand Watermark */}
       <Link to="/" className="absolute top-8 left-8 sm:left-16 md:left-28 flex items-center gap-2 text-white/80 hover:text-white font-bold text-xl transition-all cursor-pointer">
         <Compass className="w-6 h-6 text-blue-400" />
