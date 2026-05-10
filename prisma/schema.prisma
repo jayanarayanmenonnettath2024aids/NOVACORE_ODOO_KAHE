@@ -42,8 +42,10 @@ model Trip {
   transportType  String?       // Flight, Train, Bus, Road Trip
   visibility     String        @default("Private") // Private, Public, Shared
   invitees       String?       // Comma-separated emails
-  isPublic       Boolean       @default(false)
-  createdAt      DateTime      @default(now())
+  isPublic          Boolean       @default(false)
+  discoveryStrategy String        @default("Single City") // "Single City" or "Multi-City"
+  primaryDestination String?
+  createdAt         DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   stops          Stop[]
   expenses       Expense[]

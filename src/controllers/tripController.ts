@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
+import { AIService } from '../services/aiService';
 
 export const createTrip = async (req: Request, res: Response) => {
   try {
     const { 
       name, slug, startDate, endDate, description, coverPhotoUrl, 
       type, companionType, currency, budgetEstimate, 
-      travelPace, mood, transportType, visibility, invitees 
+      travelPace, mood, transportType, visibility, invitees,
+      primaryDestination, discoveryStrategy
     } = req.body;
     const userId = req.user!.userId;
 
@@ -32,6 +34,8 @@ export const createTrip = async (req: Request, res: Response) => {
         visibility: visibility || "Private",
         invitees,
         isPublic: visibility === "Public",
+        primaryDestination,
+        discoveryStrategy: discoveryStrategy || "Single City"
       }
     });
 
@@ -87,7 +91,17 @@ export const getTripById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Trip not found' });
     }
 
-    res.json(trip);
+    let aiAnalysis = null;
+    try {
+      aiAnalysis = await AIService.analyzeTrip(id);
+    } catch (aiError) {
+      console.error('AI Analysis failed, skipping:', aiError);
+    }
+
+    res.json({
+      ...trip,
+      aiAnalysis
+    });
   } catch (error) {
     console.error('Error fetching trip details:', error);
     res.status(500).json({ error: 'Failed to fetch trip details' });
@@ -101,7 +115,8 @@ export const updateTrip = async (req: Request, res: Response) => {
     const { 
       name, slug, startDate, endDate, description, coverPhotoUrl, 
       type, companionType, currency, budgetEstimate, 
-      travelPace, mood, transportType, visibility, invitees 
+      travelPace, mood, transportType, visibility, invitees,
+      primaryDestination, discoveryStrategy
     } = req.body;
 
     const trip = await prisma.trip.findFirst({ where: { id, userId } });
@@ -125,7 +140,9 @@ export const updateTrip = async (req: Request, res: Response) => {
         transportType,
         visibility,
         invitees,
-        isPublic: visibility === "Public"
+        isPublic: visibility === "Public",
+        primaryDestination,
+        discoveryStrategy
       }
     });
 

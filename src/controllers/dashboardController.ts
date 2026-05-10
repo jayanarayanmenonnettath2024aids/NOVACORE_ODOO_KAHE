@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma';
+import { AIService } from '../services/aiService';
 
 export const getDashboardData = async (req: Request, res: Response) => {
   try {
@@ -45,13 +46,27 @@ export const getDashboardData = async (req: Request, res: Response) => {
       take: 10
     });
 
-    // AI Dynamic Reminders based on next trip
-    const reminders = [];
+    // AI Dynamic Reminders and reasoning based on upcoming trips
     const next = upcomingTrips[0];
+    let aiTripAnalysis = null;
+    const reminders = [];
+
     if (next) {
       const days = Math.ceil((next.startDate.getTime() - Date.now()) / (1000 * 3600 * 24));
       if (days <= 7) reminders.push({ id: 'r1', title: 'Final Packing', message: `Your trip to ${next.name} starts in ${days} days! Time to finalize your checklist.`, type: 'alert' });
       if (days <= 30) reminders.push({ id: 'r2', title: 'Local Insights', message: `Don't forget to check the weather for your ${next.stops[0]?.cityName || 'destination'} stops.`, type: 'info' });
+      
+      aiTripAnalysis = await AIService.analyzeTrip(next.id);
+    }
+
+    // AI reasoning for goals
+    let manifestAnalysis = [];
+    try {
+      manifestAnalysis = await Promise.all(
+        manifestGoals.slice(0, 2).map(g => AIService.analyzeManifest(g.id))
+      );
+    } catch (err) {
+      console.error('Manifest analysis failed:', err);
     }
 
     res.json({
@@ -61,6 +76,8 @@ export const getDashboardData = async (req: Request, res: Response) => {
       ongoingTrips,
       notifications,
       manifestGoals,
+      manifestAnalysis,
+      aiTripAnalysis,
       aiReminders: reminders,
       userStats: {
         totalTrips: trips.length,
