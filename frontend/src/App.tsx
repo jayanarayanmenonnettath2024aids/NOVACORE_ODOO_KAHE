@@ -11,7 +11,6 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 import { SimpleHeader } from '@/components/ui/simple-header';
 import IntroVideo from './pages/IntroVideo';
-import Landing from './pages/Landing';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token');
@@ -23,7 +22,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function AppContent() {
   const location = useLocation();
-  const isImmersivePage = ['/', '/login', '/signup', '/landing'].includes(location.pathname);
+  const isImmersivePage = ['/', '/login', '/signup'].includes(location.pathname);
 
   if (isImmersivePage) {
     return (
@@ -31,7 +30,6 @@ function AppContent() {
         <Route path="/" element={<IntroVideo />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/landing" element={<Landing />} />
       </Routes>
     );
   }
@@ -43,7 +41,6 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/landing" element={<Landing />} />
           <Route 
             path="/dashboard" 
             element={

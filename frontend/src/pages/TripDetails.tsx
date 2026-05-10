@@ -3,13 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, MapPin, DollarSign, Package, FileText,
-  ChevronLeft, Plus, Clock, Trash2, CheckCircle2, Circle,
+  ChevronLeft, ChevronDown, Plus, Clock, Trash2, CheckCircle2, Circle, Check,
   BarChart3, TrendingDown, AlertCircle,
   Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+
 import api from '../api/axios';
-import { predictTotalCost, getPackingSuggestions } from '../utils/AIUtility';
+import { getPackingSuggestions } from '../utils/AIUtility';
+
 
 const TripDetails = () => {
   const { id } = useParams();
@@ -169,7 +170,13 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData);
+    const raw = Object.fromEntries(formData);
+    const data = {
+      name: raw.name as string,
+      type: (raw.type as string) || undefined,
+      cost: raw.cost ? parseFloat(raw.cost as string) : 0,
+      duration: raw.duration ? parseInt(raw.duration as string, 10) : undefined,
+    };
     try {
       await api.post(`/trips/stops/${showAddActivity}/activities`, data);
       setShowAddActivity(null);
@@ -177,96 +184,141 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     } catch (err) { alert('Failed to add activity'); } finally { setLoading(false); }
   };
 
+
+  const stops = trip.stops || [];
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+    <div className="space-y-5" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .section-card { transition: box-shadow 0.2s, transform 0.2s; }
+        .section-card:hover { box-shadow: 0 8px 32px rgba(109,40,217,0.10); transform: translateY(-2px); }
+        .pill-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:999px; border:1.5px solid #e5e7eb; background:#fff; font-size:12px; font-weight:700; color:#374151; cursor:pointer; transition:border-color 0.15s,background 0.15s; }
+        .pill-btn:hover { border-color:#a855f7; background:#faf5ff; color:#7c3aed; }
+        .add-section-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:16px; border-radius:16px; border:2px dashed #d1d5db; background:transparent; font-size:13px; font-weight:800; color:#6b7280; cursor:pointer; letter-spacing:0.03em; transition:border-color 0.15s,color 0.15s,background 0.15s; }
+        .add-section-btn:hover { border-color:#a855f7; color:#7c3aed; background:#faf5ff; }
+      `}</style>
+
+      {/* Header bar: title + LIST/GRID toggle + Add Stop */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
         <div>
-          <h3 className="text-2xl font-black text-gray-900 tracking-tight">Itinerary Builder</h3>
-          <p className="text-gray-500 font-medium">Review and construct your full plan.</p>
+          <h3 className="text-xl font-black text-gray-900 tracking-tight">Itinerary Builder</h3>
+          <p className="text-gray-400 text-sm font-medium mt-0.5">Review and construct your full plan.</p>
         </div>
-        <div className="flex items-center gap-4 w-full md:w-auto">
+        <div className="flex items-center gap-3">
           <div className="flex bg-gray-100 p-1 rounded-xl">
-            <button onClick={() => setItineraryView('timeline')} className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${itineraryView === 'timeline' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}>LIST</button>
-            <button onClick={() => setItineraryView('grid')} className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${itineraryView === 'grid' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-400'}`}>GRID</button>
+            <button
+              onClick={() => setItineraryView('timeline')}
+              className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${
+                itineraryView === 'timeline' ? 'bg-white shadow text-purple-600' : 'text-gray-400 hover:text-gray-700'
+              }`}
+            >LIST</button>
+            <button
+              onClick={() => setItineraryView('grid')}
+              className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${
+                itineraryView === 'grid' ? 'bg-white shadow text-purple-600' : 'text-gray-400 hover:text-gray-700'
+              }`}
+            >GRID</button>
           </div>
           <button
             onClick={() => setShowAddStop(true)}
-            className="flex-1 md:flex-none bg-purple-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:bg-purple-700 transition-all shadow-xl shadow-purple-100"
+            className="bg-purple-600 text-white px-6 py-3 rounded-xl font-black flex items-center gap-2 hover:bg-purple-700 transition-all shadow-lg shadow-purple-100 text-sm"
           >
-            <Plus className="w-5 h-5" /> Add Stop
+            <Plus className="w-4 h-4" /> Add Stop
           </button>
         </div>
       </div>
 
-      <div className={`relative ${itineraryView === 'timeline' ? 'border-l-4 border-purple-100 ml-8 space-y-12 pb-12' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12'}`}>
-        {trip.stops?.length > 0 ? (
-          trip.stops.map((stop: any, idx: number) => (
-            <div key={stop.id} className={`relative group ${itineraryView === 'timeline' ? 'pl-12' : ''}`}>
-              {itineraryView === 'timeline' && <div className="absolute -left-[14px] top-0 w-6 h-6 bg-purple-600 rounded-full border-4 border-white shadow-xl ring-4 ring-purple-50 group-hover:scale-125 transition-transform"></div>}
-              <div className={`bg-white rounded-[2.5rem] border border-gray-100 shadow-sm group-hover:shadow-xl transition-all duration-300 ${itineraryView === 'timeline' ? 'p-8' : 'p-6 h-full flex flex-col'}`}>
-                <div className={`flex flex-col justify-between items-start gap-4 mb-6 ${itineraryView === 'timeline' ? 'md:flex-row' : ''}`}>
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-black text-base shadow-inner">
-                      {idx + 1}
-                    </div>
-                    <div>
-                      <h4 className="text-2xl font-black text-gray-900 tracking-tight line-clamp-1">{stop.cityName}</h4>
-                      <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">{stop.country}</p>
-                    </div>
+      {/* Section Cards or Empty State */}
+      {stops.length > 0 ? (
+        <div className={itineraryView === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}>
+          {stops.map((stop: any, idx: number) => {
+            const activityCost = stop.activities?.reduce((s: number, a: any) => s + (a.cost || 0), 0) || 0;
+            const hasDateRange = stop.startDate || stop.endDate;
+            return (
+              <motion.div
+                key={stop.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.07 }}
+                className="section-card bg-white rounded-2xl border border-gray-150 p-6 shadow-sm"
+              >
+                {/* Section header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Section {idx + 1}:</p>
+                    <h4 className="text-base font-black text-gray-900 leading-tight">{stop.cityName}{stop.country ? `, ${stop.country}` : ''}</h4>
+                    {/* Activities summary */}
+                    <p className="text-sm text-gray-500 font-medium mt-1.5 leading-relaxed">
+                      {stop.activities?.length > 0
+                        ? stop.activities.map((a: any) => a.name).join(' · ')
+                        : 'All the necessary information about this section. This can be anything like travel section, hotel or any other activity.'}
+                    </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button className="p-3 bg-gray-50 text-gray-400 rounded-xl hover:bg-purple-50 hover:text-purple-600 transition-colors"><Edit3 className="w-4 h-4" /></button>
-                    <button className="p-3 bg-gray-50 text-gray-400 rounded-xl hover:bg-red-50 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-
-                <div className="flex-1 space-y-4">
-                  <div className="flex items-center justify-between border-t pt-4">
-                    <h5 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Activities</h5>
-                    <button
-                      onClick={() => setShowAddActivity(stop.id)}
-                      className="text-xs font-black text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg transition-all"
-                    >
-                      + ASSIGN
+                  {/* Edit/Delete */}
+                  <div className="flex gap-1.5 ml-4">
+                    <button className="p-2 rounded-lg text-gray-300 hover:text-purple-600 hover:bg-purple-50 transition-all">
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all">
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="space-y-3">
-                    {stop.activities?.map((activity: any) => (
-                      <div key={activity.id} className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-transparent hover:border-purple-100 hover:bg-white transition-all shadow-sm group/act">
-                        <Clock className="w-4 h-4 text-purple-400" />
-                        <div className="flex-1">
-                          <p className="font-bold text-gray-800 text-sm">{activity.name}</p>
-                          <p className="text-xs font-black text-purple-600/30 uppercase tracking-widest">${activity.cost || 0}</p>
-                        </div>
-                      </div>
-                    ))}
-                    {(!stop.activities || stop.activities.length === 0) && (
-                      <div className="py-6 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-                        <p className="text-[10px] font-bold text-gray-400 italic">No items yet</p>
-                      </div>
-                    )}
-                  </div>
                 </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="pl-12 py-32 text-center bg-gray-50/50 rounded-[4rem] border-4 border-dashed border-gray-200 mx-8">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl border border-gray-50">
-              <MapPin className="w-12 h-12 text-gray-200" />
-            </div>
-            <h4 className="text-base font-black text-gray-900 mb-2">Build your path</h4>
-            <p className="text-gray-500 font-medium mb-10 max-w-sm mx-auto">Add your first city stop to begin constructing your daily itinerary.</p>
-            <button
-              onClick={() => setShowAddStop(true)}
-              className="bg-purple-600 text-white px-12 py-5 rounded-[2rem] font-black text-base shadow-2xl shadow-purple-200 hover:bg-purple-700 transition-all active:scale-95"
-            >
-              Add First Stop
-            </button>
-          </div>
-        )}
-      </div>
 
+                {/* Pill buttons row */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <button className="pill-btn">
+                    <Calendar className="w-3.5 h-3.5 text-purple-400" />
+                    {hasDateRange
+                      ? `${stop.startDate ? new Date(stop.startDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short' }) : '—'} to ${stop.endDate ? new Date(stop.endDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short' }) : '—'}`
+                      : 'Date Range: Set dates'}
+                  </button>
+                  <button
+                    className="pill-btn"
+                    onClick={() => setShowAddActivity(stop.id)}
+                  >
+                    <DollarSign className="w-3.5 h-3.5 text-purple-400" />
+                    {activityCost > 0 ? `Budget: ${trip.currency || '₹'} ${activityCost.toLocaleString()}` : 'Budget of this section'}
+                  </button>
+                  <button
+                    onClick={() => setShowAddActivity(stop.id)}
+                    className="pill-btn"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-purple-400" />
+                    Add Activity
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
+
+          {/* Add another Section button */}
+          <button className="add-section-btn" onClick={() => setShowAddStop(true)}>
+            <Plus className="w-4 h-4" />
+            Add another Section
+          </button>
+        </div>
+      ) : (
+        /* Empty state */
+        <div className="flex flex-col items-center justify-center py-24 bg-gray-50/60 rounded-2xl border-2 border-dashed border-gray-200">
+          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-lg border border-gray-100">
+            <MapPin className="w-10 h-10 text-gray-200" />
+          </div>
+          <h4 className="text-base font-black text-gray-800 mb-2">Build your path</h4>
+          <p className="text-gray-400 font-medium text-sm max-w-xs text-center mb-8">
+            Add your first city stop to begin constructing your <span className="text-purple-600 font-bold">daily itinerary</span>.
+          </p>
+          <button
+            onClick={() => setShowAddStop(true)}
+            className="bg-purple-600 text-white px-10 py-4 rounded-full font-black text-sm shadow-xl shadow-purple-200 hover:bg-purple-700 transition-all active:scale-95"
+          >
+            Add First Stop
+          </button>
+        </div>
+      )}
+
+      {/* Modals */}
       <AnimatePresence>
         {showAddStop && (
           <Modal title="Add New Stop" onClose={() => setShowAddStop(false)} onSubmit={handleAddStop} loading={loading}>
@@ -285,38 +337,38 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-hidden flex flex-col">
               <button onClick={() => setShowAddActivity(null)} className="absolute top-8 right-8 text-gray-400 hover:text-gray-900"><X className="w-6 h-6" /></button>
               <div className="mb-8">
-                <h3 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Activity Search</h3>
-                <p className="text-gray-500 font-medium">Browse and select things to do in this stop.</p>
+                <h3 className="text-2xl font-black text-gray-900 mb-1">Activity Search</h3>
+                <p className="text-gray-400 font-medium text-sm">Browse and select things to do in this stop.</p>
               </div>
-              <div className="flex gap-4 mb-8">
+              <div className="flex gap-4 mb-6">
                 <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input value={activitySearch} onChange={(e) => setActivitySearch(e.target.value)} placeholder="Search activities..." className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 transition-all font-bold" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input value={activitySearch} onChange={(e) => setActivitySearch(e.target.value)} placeholder="Search activities..." className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 transition-all font-bold text-sm" />
                 </div>
-                <select value={selectedActType} onChange={(e) => setSelectedActType(e.target.value)} className="px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 transition-all font-bold text-gray-500">
-                  <option value="All">All Interests</option>
+                <select value={selectedActType} onChange={(e) => setSelectedActType(e.target.value)} className="px-5 py-3.5 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 transition-all font-bold text-gray-500 text-sm">
+                  <option value="All">All Types</option>
                   <option value="Culture">Culture</option>
                   <option value="Food">Food</option>
                   <option value="Adventure">Adventure</option>
                   <option value="Sightseeing">Sightseeing</option>
                 </select>
               </div>
-              <div className="flex-1 overflow-y-auto no-scrollbar grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
+              <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4 pb-6">
                 {filteredSuggested.map((act, idx) => (
-                  <div key={idx} className="bg-gray-50 rounded-[2rem] overflow-hidden border border-transparent hover:border-purple-100 transition-all group flex flex-col">
-                    <div className="h-32 relative"><img src={act.img} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /><div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-black text-purple-600 shadow-sm">${act.cost}</div></div>
-                    <div className="p-5 flex-1 flex flex-col">
-                      <div className="flex justify-between items-start mb-2"><h4 className="font-black text-gray-900 leading-tight">{act.name}</h4><span className="text-xs font-black text-gray-400 uppercase tracking-widest">{act.duration}</span></div>
-                      <button onClick={async () => { setLoading(true); try { await api.post(`/trips/stops/${showAddActivity}/activities`, { name: act.name, cost: act.cost, type: act.type }); setShowAddActivity(null); onUpdate(); } catch (err) { alert('Failed to add activity'); } finally { setLoading(false); } }} className="mt-auto w-full py-3 bg-white text-purple-600 rounded-xl font-black text-xs hover:bg-purple-600 hover:text-white transition-all shadow-sm">ADD TO STOP</button>
+                  <div key={idx} className="bg-gray-50 rounded-2xl overflow-hidden border border-transparent hover:border-purple-100 transition-all group flex flex-col">
+                    <div className="h-28 relative"><img src={act.img} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={act.name} /><div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-black text-purple-600">${act.cost}</div></div>
+                    <div className="p-4 flex-1 flex flex-col">
+                      <div className="flex justify-between items-start mb-2"><h4 className="font-black text-gray-900 text-sm leading-tight">{act.name}</h4><span className="text-xs font-bold text-gray-400">{act.duration}</span></div>
+                      <button onClick={async () => { setLoading(true); try { await api.post(`/trips/stops/${showAddActivity}/activities`, { name: act.name, cost: Number(act.cost) || 0, type: act.type }); setShowAddActivity(null); onUpdate(); } catch (err) { alert('Failed'); } finally { setLoading(false); } }} className="mt-auto w-full py-2.5 bg-white text-purple-600 rounded-xl font-black text-xs hover:bg-purple-600 hover:text-white transition-all border border-purple-100">ADD TO STOP</button>
                     </div>
                   </div>
                 ))}
-                <div className="col-span-full border-t pt-8 mt-4">
+                <div className="col-span-full border-t pt-6 mt-2">
                   <h5 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Or Add Custom Activity</h5>
                   <form onSubmit={handleAddActivity} className="space-y-4">
-                    <Input name="name" label="Custom Activity Name" placeholder="e.g. Secret Rooftop Bar" required />
-                    <div className="grid grid-cols-2 gap-4"><Input name="cost" label="Estimated Cost ($)" type="number" defaultValue="0" /><Input name="duration" label="Duration" defaultValue="2h" /></div>
-                    <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-sm">Create Custom Activity</button>
+                    <Input name="name" label="Activity Name" placeholder="e.g. Secret Rooftop Bar" required />
+                    <div className="grid grid-cols-2 gap-4"><Input name="cost" label="Cost (₹)" type="number" defaultValue="0" /><Input name="duration" label="Duration (mins)" type="number" defaultValue="60" /></div>
+                    <button className="w-full py-3.5 bg-gray-900 text-white rounded-2xl font-black text-sm">Create Custom Activity</button>
                   </form>
                 </div>
               </div>
@@ -327,6 +379,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     </div>
   );
 };
+
 
 const Modal = ({ title, children, onClose, onSubmit, loading }: any) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-md">
@@ -351,92 +404,218 @@ const Input = ({ label, ...props }: any) => (
 );
 
 const BudgetTab = ({ trip, currency }: any) => {
-  const predictedTotal = predictTotalCost(trip, currency);
   const currencySymbols: any = { 'USD': '$', 'EUR': '€', 'INR': '₹', 'GBP': '£', 'JPY': '¥' };
-  const symbol = currencySymbols[currency] || '$';
+  const symbol = currencySymbols[currency] || '₹';
+  const [search, setSearch] = useState('');
 
-  const COLORS = ['#a855f7', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-  const actualCost = trip.stops?.reduce((acc: number, stop: any) =>
-    acc + (stop.activities?.reduce((s: number, a: any) => s + (a.cost || 0), 0) || 0), 0
-  ) || 0;
+  const stops = (trip.stops || []).filter((s: any) =>
+    s.cityName?.toLowerCase().includes(search.toLowerCase()) ||
+    s.activities?.some((a: any) => a.name?.toLowerCase().includes(search.toLowerCase()))
+  );
 
-  const data = [
-    { name: 'Planned', value: actualCost },
-    { name: 'Buffer', value: Math.round(predictedTotal * 0.15) },
-    { name: 'Daily Est.', value: Math.round(predictedTotal * 0.25) },
-  ];
+  const grandTotal = (trip.stops || []).reduce((acc: number, stop: any) =>
+    acc + (stop.activities?.reduce((s: number, a: any) => s + (Number(a.cost) || 0), 0) || 0), 0
+  );
+
+  const stopTotal = (stop: any) =>
+    (stop.activities || []).reduce((s: number, a: any) => s + (Number(a.cost) || 0), 0);
+
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-          <div className="flex items-center gap-3 text-purple-600 mb-4">
-            <DollarSign className="w-6 h-6" />
-            <span className="text-xs font-black uppercase tracking-widest">AI PREDICTED TOTAL</span>
-          </div>
-          <h4 className="text-base font-black text-gray-900">{symbol}{predictedTotal.toLocaleString()}</h4>
-          <div className="mt-4 flex items-center gap-2 text-green-600 font-bold text-xs bg-green-50 w-fit px-3 py-1.5 rounded-xl">
-            <TrendingDown className="w-3.5 h-3.5" /> High Accuracy
-          </div>
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingUp className="w-16 h-16 text-purple-600" />
-          </div>
+    <div className="space-y-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .budget-arrow { display:flex; justify-content:center; padding:2px 0; }
+        .budget-row { transition: background 0.15s; }
+        .budget-row:hover { background: #faf5ff; }
+        .cost-chip { display:inline-flex; align-items:center; justify-content:center; min-width:80px; padding:6px 14px; border-radius:999px; font-size:13px; font-weight:700; background:#f3f0ff; color:#7c3aed; border:1.5px solid #ede9fe; }
+        .day-label { display:inline-flex; align-items:center; gap:6px; padding:5px 16px; border-radius:999px; border:1.5px solid #e5e7eb; font-size:12px; font-weight:800; color:#374151; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+        .budget-table-head { display:grid; grid-template-columns:1fr 140px; gap:12px; padding:10px 16px; border-bottom:2px solid #f3f4f6; }
+        .budget-table-row { display:grid; grid-template-columns:1fr 140px; gap:12px; padding:12px 16px; align-items:center; }
+        .total-row { display:grid; grid-template-columns:1fr 140px; gap:12px; padding:14px 16px; background:linear-gradient(90deg,#faf5ff,#f5f3ff); border-top:2px solid #e9d5ff; }
+      `}</style>
+
+
+      {/* Search + Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search bar ......"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-11 pr-4 py-2.5 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-200"
+          />
         </div>
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center">
-          <div className="flex justify-between text-xs font-black text-gray-400 mb-3 tracking-widest">
-            <span>PLANNING COMPLETION</span>
-            <span className="text-purple-600">{Math.round((actualCost / predictedTotal) * 100) || 0}%</span>
-          </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: `${(actualCost / predictedTotal) * 100}%` }} className="h-full bg-purple-600 rounded-full"></motion.div>
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-8 rounded-[2.5rem] shadow-xl text-white">
-          <div className="flex items-center gap-3 mb-4 opacity-80">
-            <AlertCircle className="w-6 h-6" />
-            <span className="text-xs font-black uppercase tracking-widest">AI SAVINGS BOT</span>
-          </div>
-          <p className="font-bold text-base leading-snug">The AI detected potential savings of {symbol}{Math.round(predictedTotal * 0.12)} if you switch to group activities.</p>
+        <div className="flex gap-2">
+          {['Group by','Filter','Sort by...'].map(label => (
+            <button key={label} className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-600 hover:bg-gray-50 hover:border-purple-300 transition-all">{label}</button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm">
-          <h4 className="text-base font-black text-gray-900 mb-8 tracking-tight">Financial Forecast</h4>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={data} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {data.map((entry, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+      {/* Grand Total Summary Strip */}
+      <div className="flex items-center justify-between bg-white px-6 py-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
+            <DollarSign className="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Budget</p>
+            <p className="text-lg font-black text-gray-900">{symbol}{grandTotal.toLocaleString()}</p>
           </div>
         </div>
-        <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-6">
-            <BarChart3 className="w-10 h-10 text-purple-600" />
+        <div className="flex items-center gap-6 text-sm">
+          <div className="text-center">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Stops</p>
+            <p className="font-black text-gray-900">{(trip.stops || []).length}</p>
           </div>
-          <h4 className="text-base font-black text-gray-900 mb-2">Detailed Analytics</h4>
-          <p className="text-gray-500 font-medium max-w-xs mb-8">The AI is currently analyzing your spending patterns across {trip.stops?.length} destinations.</p>
-          <button className="px-10 py-4 bg-gray-900 text-white rounded-[1.5rem] font-black text-sm hover:scale-105 transition-all shadow-xl">VIEW FULL REPORT</button>
+          <div className="text-center">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Activities</p>
+            <p className="font-black text-gray-900">{(trip.stops || []).reduce((a: number, s: any) => a + (s.activities?.length || 0), 0)}</p>
+          </div>
+          <div className="px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-black flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5" /> AI Optimized
+          </div>
         </div>
       </div>
+
+      {/* Day-by-Day Budget Table */}
+      {stops.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-gray-50/60 rounded-2xl border-2 border-dashed border-gray-200">
+          <DollarSign className="w-10 h-10 text-gray-200 mb-3" />
+          <p className="text-gray-400 font-bold text-sm">No stops found. Add stops in the Itinerary tab to track expenses.</p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {stops.map((stop: any, stopIdx: number) => {
+            const acts = stop.activities || [];
+            const total = stopTotal(stop);
+            return (
+              <motion.div
+                key={stop.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: stopIdx * 0.06 }}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+              >
+                {/* Stop header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+                  <div className="flex items-center gap-3">
+                    <span className="day-label">
+                      <MapPin className="w-3.5 h-3.5 text-purple-500" />
+                      Day {stopIdx + 1}
+                    </span>
+                    <div>
+                      <h4 className="font-black text-gray-900 text-sm leading-tight">{stop.cityName}</h4>
+                      {stop.country && <p className="text-xs text-gray-400 font-semibold">{stop.country}</p>}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Stop Total</p>
+                    <p className="font-black text-purple-700 text-base">{symbol}{total.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                {/* Column header */}
+                <div className="budget-table-head">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Physical Activity</span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Expense</span>
+                </div>
+
+                {/* Activity rows */}
+                {acts.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="text-xs font-semibold text-gray-400 italic">No activities added yet.</p>
+                  </div>
+                ) : (
+                  <div>
+                    {acts.map((act: any, actIdx: number) => (
+                      <div key={act.id}>
+                        <div className="budget-table-row budget-row">
+                          {/* Activity name */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                              <Clock className="w-3.5 h-3.5 text-purple-500" />
+                            </div>
+                            <span className="text-sm font-semibold text-gray-800 leading-tight">{act.name}</span>
+                          </div>
+                          {/* Cost chip — display only */}
+                          <div className="flex justify-end">
+                            <span className="cost-chip">
+                              {symbol}{(act.cost || 0).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Arrow connector between activities */}
+                        {actIdx < acts.length - 1 && (
+                          <div className="budget-arrow">
+                            <div className="flex flex-col items-center">
+                              <div className="w-px h-3 bg-gray-200" />
+                              <ChevronDown className="w-3.5 h-3.5 text-gray-300 -mt-1" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {/* Stop subtotal row */}
+                    <div className="total-row">
+                      <span className="text-xs font-black text-purple-700 uppercase tracking-widest">Stop Subtotal</span>
+                      <span className="text-sm font-black text-purple-700 text-right">{symbol}{total.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+
+          {/* Grand Total Footer */}
+          <div className="flex items-center justify-between bg-gray-900 text-white px-6 py-5 rounded-2xl shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-purple-300" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Grand Total</p>
+                <p className="text-xl font-black text-white">{symbol}{grandTotal.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">vs AI Estimate</p>
+              <p className="text-sm font-black text-purple-300">
+                {grandTotal === 0 ? '—' : grandTotal > 0 ? `${symbol}${grandTotal.toLocaleString()} logged` : 'On track'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const PackingTab = ({ trip, onUpdate }: any) => {
   const [loading, setLoading] = useState(false);
-  const [activeCat, setActiveCat] = useState('All');
-  const categories = ['All', 'Clothing', 'Electronics', 'Documents', 'Health', 'AI Suggested'];
+  const [search, setSearch] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
 
   const items = trip.packingItems || [];
-  const filteredItems = activeCat === 'All' ? items : items.filter((i: any) => i.category === activeCat);
+  
+  // Filter by search
+  const searchedItems = items.filter((i: any) => 
+    i.name.toLowerCase().includes(search.toLowerCase()) || 
+    i.category.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Group by category
+  const groupedItems = searchedItems.reduce((acc: any, item: any) => {
+    if (!acc[item.category]) acc[item.category] = [];
+    acc[item.category].push(item);
+    return acc;
+  }, {});
+
   const packedCount = items.filter((i: any) => i.isPacked).length;
-  const progress = (packedCount / items.length) * 100 || 0;
+  const progress = items.length > 0 ? (packedCount / items.length) * 100 : 0;
 
   const handleToggle = async (itemId: string) => {
     try {
@@ -473,53 +652,102 @@ const PackingTab = ({ trip, onUpdate }: any) => {
     } catch (err) { alert('Failed to generate items'); } finally { setLoading(false); }
   };
 
-  const [showAdd, setShowAdd] = useState(false);
+  const handleShare = () => {
+    navigator.clipboard.writeText(`Check out my packing list for ${trip.name}!`);
+    alert('Share link copied to clipboard!');
+  };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
-          <div className="flex-1 w-full">
-            <div className="flex justify-between font-black text-gray-400 text-[10px] tracking-[0.2em] mb-3">
-              <span>PACKING PROGRESS</span>
-              <span className="text-purple-600">{Math.round(progress)}%</span>
-            </div>
-            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-              <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className="h-full bg-purple-600 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)]"></motion.div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={handleReset} className="px-6 py-4 rounded-2xl bg-gray-100 text-gray-500 font-black text-xs hover:bg-gray-200 transition-all">RESET</button>
-            <button onClick={addAISuggestions} className="bg-purple-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:bg-purple-700 transition-all shadow-lg text-sm"><TrendingUp className="w-4 h-4" /> AI AUTO-GENERATE</button>
-          </div>
+    <div className="space-y-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      {/* Search + Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search bar ......"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-11 pr-4 py-2.5 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
+          />
         </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-6 mb-8 no-scrollbar border-b">
-          {categories.map(cat => (
-            <button key={cat} onClick={() => setActiveCat(cat)} className={`px-6 py-2.5 rounded-full font-bold text-xs whitespace-nowrap transition-all ${activeCat === cat ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}>{cat}</button>
+        <div className="flex gap-2">
+          {['Group by','Filter','Sort by...'].map(label => (
+            <button key={label} className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-600 hover:bg-gray-50 hover:border-purple-300 transition-all">{label}</button>
           ))}
-          <button onClick={() => setShowAdd(true)} className="ml-auto flex items-center gap-2 text-purple-600 font-black text-xs hover:bg-purple-50 px-4 py-2 rounded-xl transition-all">+ ADD ITEM</button>
+        </div>
+      </div>
+
+      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+        
+        {/* Header section */}
+        <div>
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Packing checklist</h3>
+          <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-700 mb-8 shadow-sm">
+            <span>Trip: {trip.name}</span>
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          </div>
+
+          <div className="flex items-center justify-between text-xs font-bold text-gray-500 mb-3">
+            <span>Progress: {packedCount}/{items.length} items packed</span>
+            <span className="text-purple-600 font-black">{Math.round(progress)}%</span>
+          </div>
+          <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className="h-full bg-purple-600 rounded-full"></motion.div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredItems.map((item: any) => (
-            <div key={item.id} className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${item.isPacked ? 'bg-green-50/50 border-green-100 opacity-60' : 'bg-white border-gray-100 hover:border-purple-200 hover:shadow-md'}`}>
-              <div className="flex items-center gap-4 flex-1 cursor-pointer" onClick={() => handleToggle(item.id)}>
-                {item.isPacked ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <Circle className="w-6 h-6 text-gray-200" />}
-                <div>
-                  <p className={`font-bold ${item.isPacked ? 'line-through text-gray-400' : 'text-gray-800'}`}>{item.name}</p>
-                  <p className="text-xs font-black text-purple-600/40 uppercase tracking-widest">{item.category}</p>
+        {/* Categories and Items */}
+        <div className="space-y-8">
+          {Object.keys(groupedItems).length === 0 ? (
+             <div className="py-12 text-center bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
+               <Package className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+               <p className="text-gray-400 font-bold italic text-sm">No items found.</p>
+             </div>
+          ) : (
+            Object.entries(groupedItems).map(([category, catItems]: any) => {
+              const catPackedCount = catItems.filter((i: any) => i.isPacked).length;
+              return (
+                <div key={category} className="space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b-2 border-gray-100">
+                    <h4 className="text-sm font-black text-gray-800">{category}</h4>
+                    <span className="text-xs font-bold text-gray-400">{catPackedCount}/{catItems.length}</span>
+                  </div>
+                  <div className="space-y-3">
+                    {catItems.map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between group">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleToggle(item.id)}>
+                          <div className={`w-5 h-5 rounded-[6px] border-[2px] flex items-center justify-center transition-all ${item.isPacked ? 'bg-purple-600 border-purple-600' : 'border-gray-300 bg-white group-hover:border-purple-400'}`}>
+                            {item.isPacked && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                          </div>
+                          <span className={`text-sm font-semibold transition-all ${item.isPacked ? 'line-through text-gray-400' : 'text-gray-700 group-hover:text-gray-900'}`}>{item.name}</span>
+                        </div>
+                        <button onClick={() => handleDelete(item.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <button onClick={() => handleDelete(item.id)} className="text-gray-300 hover:text-red-500 transition-colors p-2"><Trash2 className="w-4 h-4" /></button>
-            </div>
-          ))}
-          {filteredItems.length === 0 && (
-            <div className="col-span-full py-12 text-center bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
-              <Package className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-              <p className="text-gray-400 font-bold italic text-sm">No items found in this category.</p>
-            </div>
+              );
+            })
           )}
+        </div>
+
+        {/* Bottom Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-8 mt-4">
+          <button onClick={() => setShowAdd(true)} className="flex-1 py-3 px-4 rounded-xl border border-gray-200 bg-white text-gray-600 font-bold text-xs hover:bg-gray-50 transition-all text-center">
+            + add item to checklist
+          </button>
+          <button onClick={handleReset} className="flex-1 py-3 px-4 rounded-xl border border-gray-200 bg-white text-gray-600 font-bold text-xs hover:bg-gray-50 transition-all text-center">
+            Reset all
+          </button>
+          <button onClick={handleShare} className="flex-1 py-3 px-4 rounded-xl border border-gray-200 bg-white text-gray-600 font-bold text-xs hover:bg-gray-50 transition-all text-center">
+            Share Checklist
+          </button>
+          <button onClick={addAISuggestions} className="flex-1 py-3 px-4 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 font-bold text-xs hover:bg-purple-100 transition-all text-center flex items-center justify-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5" /> AI Auto-Generate
+          </button>
         </div>
       </div>
 
@@ -558,8 +786,17 @@ const JournalTab = ({ trip, onUpdate }: any) => {
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editNote, setEditNote] = useState<any>(null);
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('All');
 
   const notes = trip.notes || [];
+
+  const filteredNotes = notes.filter((n: any) => 
+    n.content?.toLowerCase().includes(search.toLowerCase()) &&
+    (filterType === 'All' || 
+     (filterType === 'by stop' && n.stopId) ||
+     (filterType === 'by Day'))
+  );
 
   const handleDelete = async (noteId: string) => {
     if (window.confirm('Delete this journal entry?')) {
@@ -571,69 +808,110 @@ const JournalTab = ({ trip, onUpdate }: any) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10">
-      <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-purple-50/50">
-        <div>
-          <h3 className="text-2xl font-black text-gray-900 tracking-tight">Trip Journal</h3>
-          <p className="text-gray-400 font-bold text-sm mt-1">Capture your favorite moments and important details.</p>
+    <div className="space-y-6" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      {/* Search + Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search bar ......"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-11 pr-4 py-2.5 bg-gray-50 rounded-xl text-sm font-semibold text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
+          />
         </div>
-        <button
-          onClick={() => { setEditNote(null); setShowAdd(true); }}
-          className="bg-purple-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:bg-purple-700 transition-all shadow-lg active:scale-95"
-        >
-          <Plus className="w-5 h-5" /> WRITE ENTRY
-        </button>
+        <div className="flex gap-2">
+          {['Group by','Filter','Sort by...'].map(label => (
+            <button key={label} className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-600 hover:bg-gray-50 hover:border-purple-300 transition-all">{label}</button>
+          ))}
+        </div>
       </div>
 
-      <div className="space-y-6">
-        {notes.map((note: any) => (
-          <motion.div
-            key={note.id}
-            whileHover={{ y: -5 }}
-            className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm hover:shadow-2xl transition-all group"
-          >
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-purple-50 text-purple-600 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest">Memories</span>
-                  <span className="text-xs font-black text-gray-300 uppercase tracking-widest flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {new Date(note.timestamp).toLocaleString()}
-                  </span>
-                </div>
-                {note.stopId && (
-                  <p className="flex items-center gap-1.5 text-sm font-bold text-purple-400">
-                    <MapPin className="w-3.5 h-3.5" /> Tied to {trip.stops.find((s: any) => s.id === note.stopId)?.cityName}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => { setEditNote(note); setShowAdd(true); }}
-                  className="p-3 text-gray-300 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
-                >
-                  <Edit3 className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(note.id)}
-                  className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
+      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+        
+        {/* Header section */}
+        <div>
+          <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-4">Trip notes</h3>
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-700 shadow-sm">
+              <span>Trip: {trip.name}</span>
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             </div>
-            <p className="text-gray-600 text-base leading-relaxed font-medium whitespace-pre-wrap">{note.content}</p>
-          </motion.div>
-        ))}
-
-        {notes.length === 0 && (
-          <div className="py-24 text-center bg-gray-50/50 rounded-[4rem] border-4 border-dashed border-gray-100">
-            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-              <Edit3 className="w-10 h-10 text-gray-200" />
-            </div>
-            <h4 className="text-base font-black text-gray-300">No journal entries yet</h4>
-            <p className="text-gray-400 font-bold mt-2">Start documenting your journey today!</p>
+            
+            <button
+              onClick={() => { setEditNote(null); setShowAdd(true); }}
+              className="bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-800 transition-all shadow-sm active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Note
+            </button>
           </div>
-        )}
+
+          <div className="flex gap-2 mt-6">
+            {['All', 'by Day', 'by stop'].map(filter => (
+              <button 
+                key={filter} 
+                onClick={() => setFilterType(filter)}
+                className={`px-5 py-2 rounded-xl font-bold text-xs transition-all ${filterType === filter ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes List */}
+        <div className="space-y-4">
+          {filteredNotes.map((note: any) => {
+            const stop = trip.stops?.find((s: any) => s.id === note.stopId);
+            const contentLines = note.content.split('\n');
+            const titleSnippet = contentLines[0].substring(0, 40) + (contentLines[0].length > 40 ? '...' : '');
+            const displayTitle = stop ? `${titleSnippet} - ${stop.cityName} stop` : titleSnippet;
+            
+            return (
+              <motion.div
+                key={note.id}
+                whileHover={{ y: -2 }}
+                className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:border-purple-200 transition-all relative group"
+              >
+                <div className="pr-16">
+                  <h4 className="text-sm font-black text-gray-800 mb-2">{displayTitle}</h4>
+                  <p className="text-gray-600 text-xs font-medium leading-relaxed whitespace-pre-wrap line-clamp-2 mb-3">
+                    {note.content}
+                  </p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    {new Date(note.timestamp).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+                
+                <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => { setEditNote(note); setShowAdd(true); }}
+                    className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all border border-gray-100 hover:border-purple-100 bg-white"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(note.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all border border-gray-100 hover:border-red-100 bg-white"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            )
+          })}
+
+          {filteredNotes.length === 0 && (
+            <div className="py-16 text-center bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <FileText className="w-5 h-5 text-gray-300" />
+              </div>
+              <h4 className="text-sm font-black text-gray-400">No notes found</h4>
+            </div>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -711,7 +989,7 @@ const FundTab = ({ trip, onUpdate }: any) => {
     if (!amount) return;
     const remaining = (trip.budgetEstimate || 0) - (trip.currentSavings || 0);
     if (parseFloat(amount) > remaining) {
-      alert(`Manifestation successful! You only need ${trip.currency} ${remaining.toLocaleString()} to reach your budget goal.`);
+      alert(`You only need ${trip.currency} ${remaining.toLocaleString()} more to reach your goal!`);
       return;
     }
     setLoading(true);
@@ -729,122 +1007,180 @@ const FundTab = ({ trip, onUpdate }: any) => {
     }
   };
 
-  const progress = Math.min(100, (trip.currentSavings / (trip.budgetEstimate || 1)) * 100);
+  const progress = Math.min(100, ((trip.currentSavings || 0) / (trip.budgetEstimate || 1)) * 100);
+  const currencySymbol = trip.currency || 'INR';
 
   return (
-    <div className="space-y-10">
-      {/* Progress Header */}
-      <div className="bg-gray-900 rounded-[3rem] p-12 text-white shadow-2xl relative overflow-hidden">
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="flex items-center gap-2 mb-4 text-purple-400">
-              <Wallet className="w-6 h-6" />
-              <span className="text-xs font-black uppercase tracking-widest">Travel Fund</span>
+    <div className="space-y-6">
+
+      {/* ── Fund Goal Card ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* accent top bar */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-purple-500 to-violet-400" />
+        <div className="p-6 flex flex-col md:flex-row md:items-center gap-6">
+
+          {/* Left: label + amount */}
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-purple-600" />
+              </div>
+              <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Travel Fund</span>
             </div>
-            <h2 className="text-base font-black mb-2 tracking-tight">{trip.currency} {trip.currentSavings?.toLocaleString()}</h2>
-            <p className="text-gray-400 font-bold">manifested towards your {trip.currency} {trip.budgetEstimate?.toLocaleString()} goal</p>
+            <p className="text-2xl font-black text-gray-900 mb-1">
+              {currencySymbol} {(trip.currentSavings || 0).toLocaleString()}
+            </p>
+            <p className="text-sm font-semibold text-gray-400">
+              manifested towards your {currencySymbol} {(trip.budgetEstimate || 0).toLocaleString()} goal
+            </p>
           </div>
 
-          <div className="space-y-6">
-            <div className="flex justify-between items-end">
-              <span className="text-base font-black">{Math.round(progress)}%</span>
-              <span className="text-xs font-black text-gray-400 uppercase tracking-widest">FUNDED</span>
+          {/* Right: progress + CTA */}
+          <div className="flex-1 space-y-4">
+            <div className="flex justify-between items-center text-xs font-black text-gray-400 uppercase tracking-widest">
+              <span>{Math.round(progress)}%</span>
+              <span className="text-purple-600">Funded</span>
             </div>
-            <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
-                className="h-full bg-purple-600 rounded-full shadow-[0_0_20px_rgba(37,99,235,0.6)]"
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                className="h-full bg-purple-600 rounded-full"
               />
             </div>
             <button
               onClick={() => setShowAddFund(true)}
-              className="w-full bg-purple-600 hover:bg-purple-700 py-5 rounded-2xl font-black text-base transition-all flex items-center justify-center gap-3 shadow-xl shadow-purple-500/20"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3.5 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
             >
-              <Plus className="w-6 h-6" /> ADD MONEY
+              <Plus className="w-4 h-4" /> ADD MONEY
             </button>
           </div>
         </div>
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 space-y-8">
-          <h3 className="text-2xl font-black text-gray-900 tracking-tight">Contribution History</h3>
-          <div className="space-y-4">
-            {contributions.map((c: any) => (
-              <div key={c.id} className="bg-white p-6 rounded-[2.5rem] border border-gray-100 flex items-center justify-between group hover:shadow-xl transition-all">
-                <div className="flex items-center gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
-                    <Heart className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="font-black text-gray-900 text-base">{c.userName}</p>
-                    <p className="text-gray-400 font-bold text-xs italic">"{c.message || 'Saving for the adventure!'}"</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-base font-black text-purple-600">+{trip.currency} {c.amount.toLocaleString()}</p>
-                  <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">
-                    {new Date(c.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
+      {/* ── Stats row ── */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Goal', value: `${currencySymbol} ${(trip.budgetEstimate || 0).toLocaleString()}` },
+          { label: 'Saved', value: `${currencySymbol} ${(trip.currentSavings || 0).toLocaleString()}` },
+          { label: 'Remaining', value: `${currencySymbol} ${Math.max(0, (trip.budgetEstimate || 0) - (trip.currentSavings || 0)).toLocaleString()}` },
+        ].map(stat => (
+          <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 text-center">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
+            <p className="text-base font-black text-gray-900">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Main content: history + sidebar ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Contribution History */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
+            <h3 className="text-sm font-black text-gray-900">Contribution History</h3>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{contributions.length} entries</span>
+          </div>
+
+          {contributions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+              <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                <Wallet className="w-6 h-6 text-gray-300" />
               </div>
-            ))}
-            {contributions.length === 0 && (
-              <div className="text-center py-20 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
-                <Wallet className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                <p className="text-gray-400 font-black">No contributions yet. Be the first to start the fund!</p>
+              <p className="text-sm font-bold text-gray-400">No contributions yet.</p>
+              <p className="text-xs text-gray-300 font-semibold mt-1">Be the first to start the fund!</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {contributions.map((c: any, idx: number) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="flex items-center justify-between px-6 py-4 hover:bg-gray-50/60 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
+                      <Heart className="w-4 h-4 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-gray-800">{c.userName}</p>
+                      {c.message && (
+                        <p className="text-xs text-gray-400 font-medium italic">"{c.message}"</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-purple-600">+{currencySymbol} {Number(c.amount).toLocaleString()}</p>
+                    <p className="text-[10px] font-bold text-gray-300 mt-0.5">{new Date(c.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* AI Financial Tip */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-amber-500" />
               </div>
-            )}
+              <h4 className="text-sm font-black text-gray-900">AI Financial Tip</h4>
+            </div>
+            <p className="text-sm text-gray-500 font-medium leading-relaxed italic">
+              "Based on your current savings rate, you'll reach your goal in approximately{' '}
+              {Math.ceil(((trip.budgetEstimate || 1000) - (trip.currentSavings || 0)) / (contributions.length > 0 ? (contributions[0].amount || 100) : 1000))}{' '}
+              weeks. Inviting more collaborators can speed this up by 40%!"
+            </p>
+          </div>
+
+          {/* Collaborative Power */}
+          <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                <Users2 className="w-4 h-4 text-purple-600" />
+              </div>
+              <h4 className="text-sm font-black text-gray-900">Collaborative Power</h4>
+            </div>
+            <p className="text-xs text-gray-400 font-semibold leading-relaxed mb-4">
+              Invite your travel buddies to contribute. All funds are tracked transparently.
+            </p>
+            <button className="w-full flex items-center justify-center gap-2 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black transition-all active:scale-95">
+              SHARE INVITE LINK <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
-
-        <div className="space-y-8">
-          <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-gray-50">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
-                <Zap className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-black text-gray-900 tracking-tight">AI Financial Tip</h3>
-            </div>
-            <p className="text-gray-600 font-medium leading-relaxed italic">
-              "Based on your current savings rate, you'll reach your goal in approximately {Math.ceil(((trip.budgetEstimate || 1000) - trip.currentSavings) / (contributions.length > 0 ? (contributions[0].amount || 100) : 1000))} weeks. Inviting more collaborators can speed this up by 40%!"
-            </p>
-          </section>
-
-          <section className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-            <div className="relative z-10">
-              <h3 className="text-base font-black mb-4">Collaborative Power</h3>
-              <p className="text-purple-100 text-sm font-medium mb-6">Invite your travel buddies to contribute. All funds are tracked transparently for everyone to see.</p>
-              <button className="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest hover:gap-4 transition-all">
-                SHARE INVITE LINK <ArrowUpRight className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="absolute bottom-0 right-0 -mb-10 -mr-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-          </section>
-        </div>
       </div>
 
+      {/* Add Money Modal */}
       <AnimatePresence>
         {showAddFund && (
-          <Modal title="Manifest Funds" onClose={() => setShowAddFund(false)} onSubmit={handleContribute} loading={loading}>
-            <div className="space-y-6">
+          <Modal title="Add Money" onClose={() => setShowAddFund(false)} onSubmit={handleContribute} loading={loading}>
+            <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Contribution Amount ({trip.currency})</label>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
+                  Amount ({currencySymbol})
+                </label>
                 <input
                   type="number"
                   placeholder="e.g. 5000"
-                  className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-black text-base"
+                  className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 font-black text-base transition-all"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Message (Optional)</label>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
+                  Message (Optional)
+                </label>
                 <textarea
                   placeholder="Saving for our dream trip!"
-                  className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-medium text-gray-600 h-32"
+                  className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 font-medium text-gray-600 h-28 transition-all"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                 />
@@ -856,5 +1192,6 @@ const FundTab = ({ trip, onUpdate }: any) => {
     </div>
   );
 };
+
 
 export default TripDetails;

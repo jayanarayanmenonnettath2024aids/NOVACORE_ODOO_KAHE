@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { Mail, Lock, Loader2, Plane } from 'lucide-react';
 import api from '../api/axios';
 
 const Login = () => {
@@ -18,268 +19,103 @@ const Login = () => {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to login');
+      setError(err.response?.data?.error || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-page-wrapper">
-      {/* Styles for the highly-custom spinning card design */}
-      <style>{`
-        @import url("https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800,900&display=swap");
-        @import url("https://use.fontawesome.com/releases/v6.5.1/css/all.css");
+    <div 
+      className="min-h-screen w-full flex flex-col relative overflow-hidden"
+      style={{
+        backgroundImage: 'url("/login-bg.png")', // Using the local user-provided image
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        fontFamily: "'Plus Jakarta Sans', sans-serif"
+      }}
+    >
+      {/* Solid White Login Card Container */}
+      <div className="flex-1 flex items-center justify-center relative z-10 px-6 mt-20">
+        <div className="bg-white rounded-[2rem] w-full max-w-[420px] p-10 shadow-2xl">
+          
+          {/* Logo Box */}
+          <div className="flex justify-center mb-6">
+             <div className="w-20 h-20 bg-[#6b21a8] rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
+                <Plane className="w-8 h-8 mb-1" />
+                <span className="text-[10px] font-black tracking-widest leading-none">traveloop</span>
+             </div>
+          </div>
 
-        .login-page-wrapper {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          width: 100vw;
-          background: #25252b;
-          margin: 0;
-          padding: 0;
-          overflow: hidden;
-          font-family: "Poppins", sans-serif;
-          box-sizing: border-box;
-        }
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight mb-2">Welcome Back</h2>
+            <p className="text-gray-500 font-medium text-xs">Log in to your Traveloop account</p>
+          </div>
 
-        .login-page-wrapper * {
-          font-family: "Poppins", sans-serif;
-          box-sizing: border-box;
-        }
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {error && (
+              <div className="bg-red-50 text-red-600 border border-red-100 text-xs font-bold p-3 rounded-xl text-center">
+                {error}
+              </div>
+            )}
 
-        @property --a {
-          syntax: "<angle>";
-          inherits: false;
-          initial-value: 0deg;
-        }
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-gray-700">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input 
+                    type="email" 
+                    placeholder="you@example.com"
+                    {...register('email', { required: 'Email is required' })}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-semibold text-sm"
+                  />
+                </div>
+                {errors.email && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.email.message as string}</p>}
+              </div>
 
-        .magic-box {
-          position: relative;
-          width: 400px;
-          height: 200px;
-          background: repeating-conic-gradient(
-            from var(--a),
-            #ff2770 0%,
-            #ff2770 5%,
-            transparent 5%,
-            transparent 40%,
-            #ff2770 50%
-          );
-          filter: drop-shadow(0 15px 50px #000);
-          border-radius: 20px;
-          animation: rotating-border 4s linear infinite;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          transition: 0.5s;
-          cursor: pointer;
-        }
-
-        @keyframes rotating-border {
-          0% {
-            --a: 0deg;
-          }
-          100% {
-            --a: 360deg;
-          }
-        }
-
-        .magic-box::before {
-          content: "";
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background: repeating-conic-gradient(
-            from var(--a),
-            #45f3ff 0%,
-            #45f3ff 5%,
-            transparent 5%,
-            transparent 40%,
-            #45f3ff 50%
-          );
-          filter: drop-shadow(0 15px 50px #000);
-          border-radius: 20px;
-          animation: rotating-border 4s linear infinite;
-          animation-delay: -1s;
-        }
-
-        .magic-box::after {
-          content: "";
-          position: absolute;
-          inset: 4px;
-          background: #2d2d39;
-          border-radius: 15px;
-          border: 8px solid #25252b;
-        }
-
-        /* Hover expansion of the box */
-        .magic-box:hover,
-        .magic-box:focus-within {
-          width: 450px;
-          height: 520px;
-        }
-
-        .magic-box:hover .login-container,
-        .magic-box:focus-within .login-container {
-          inset: 40px;
-        }
-
-        .magic-box:hover .login-box-content,
-        .magic-box:focus-within .login-box-content {
-          transform: translateY(0px);
-        }
-
-        .login-container {
-          position: absolute;
-          inset: 60px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          flex-direction: column;
-          border-radius: 10px;
-          background: #00000033;
-          color: #fff;
-          z-index: 1000;
-          box-shadow: inset 0 10px 20px #00000080;
-          border-bottom: 2px solid #ffffff80;
-          transition: 0.5s;
-          overflow: hidden;
-        }
-
-        .login-box-content {
-          position: relative;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          flex-direction: column;
-          gap: 15px;
-          width: 80%;
-          transform: translateY(140px);
-          transition: 0.5s;
-        }
-
-        .login-box-content h2 {
-          text-transform: uppercase;
-          font-weight: 600;
-          letter-spacing: 0.2em;
-          margin: 0;
-          font-size: 1.5em;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .login-box-content h2 i {
-          color: #ff2770;
-          text-shadow: 0 0 5px #ff2770, 0 0 20px #ff2770;
-        }
-
-        .login-box-content input {
-          width: 100%;
-          padding: 10px 20px;
-          outline: none;
-          border: none;
-          font-size: 0.95em;
-          color: #fff;
-          background: #0000001a;
-          border: 2px solid #fff;
-          border-radius: 30px;
-          transition: 0.3s;
-        }
-
-        .login-box-content input::placeholder {
-          color: #999;
-        }
-
-        .login-box-content input:focus {
-          border-color: #45f3ff;
-          box-shadow: 0 0 8px rgba(69, 243, 255, 0.4);
-        }
-
-        .login-box-content input[type="submit"] {
-          background: #45f3ff;
-          border: none;
-          font-weight: 600;
-          color: #111;
-          cursor: pointer;
-          transition: 0.5s;
-          margin-top: 5px;
-        }
-
-        .login-box-content input[type="submit"]:hover {
-          box-shadow: 0 0 10px #45f3ff, 0 0 40px #45f3ff;
-        }
-
-        .login-box-content .group-links {
-          width: 100%;
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.85em;
-        }
-
-        .login-box-content .group-links a {
-          color: #fff;
-          text-decoration: none;
-          transition: 0.3s;
-        }
-
-        .login-box-content .group-links a:hover {
-          text-decoration: underline;
-        }
-
-        .login-box-content .group-links a:nth-child(2) {
-          color: #ff2770;
-          font-weight: 600;
-        }
-
-        .login-error-msg {
-          font-size: 0.75em;
-          color: #ff2770;
-          text-align: center;
-          margin: 0;
-          font-weight: 600;
-        }
-      `}</style>
-
-      <div className="magic-box">
-        <div className="login-container">
-          <form onSubmit={handleSubmit(onSubmit)} className="login-box-content">
-            <h2>
-              <i className="fa-solid fa-right-to-bracket"></i>
-              Login
-              <i className="fa-solid fa-heart"></i>
-            </h2>
-
-            {error && <p className="login-error-msg">{error}</p>}
-
-            <input 
-              type="text" 
-              placeholder="Email"
-              {...register('email', { required: 'Email is required' })}
-            />
-            {errors.email && <p className="login-error-msg">{errors.email.message as string}</p>}
-
-            <input 
-              type="password" 
-              placeholder="Password"
-              {...register('password', { required: 'Password is required' })}
-            />
-            {errors.password && <p className="login-error-msg">{errors.password.message as string}</p>}
-
-            <input 
-              type="submit" 
-              value={loading ? "Sign In..." : "Sign In"} 
-              disabled={loading}
-            />
-
-            <div className="group-links">
-              <Link to="/forgot-password">Forgot Password</Link>
-              <Link to="/signup">Sign up</Link>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-gray-700">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input 
+                    type="password" 
+                    placeholder="••••••••"
+                    {...register('password', { required: 'Password is required' })}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-semibold text-sm"
+                  />
+                </div>
+                {errors.password && <p className="text-red-500 text-[10px] font-bold mt-1">{errors.password.message as string}</p>}
+              </div>
             </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span className="text-[11px] font-bold text-gray-600">Remember me</span>
+              </label>
+              <Link to="/forgot-password" className="text-[11px] font-black text-blue-600 hover:text-blue-700 transition-colors">
+                Forgot Password?
+              </Link>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-[#2563eb] hover:bg-blue-700 text-white py-3.5 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-md active:scale-[0.98] disabled:opacity-70 mt-4"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign In"}
+            </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-[11px] font-bold text-gray-500">
+              Don't have an account?{' '}
+              <Link to="/signup" className="text-blue-600 font-black hover:underline">
+                Sign Up
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

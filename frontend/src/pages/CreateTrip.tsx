@@ -111,9 +111,10 @@ const CreateTrip = () => {
     }
     setLoading(true);
     try {
-      // Package destination name inside payload
+      // Destructure and omit slug so that the backend can generate a unique timestamped slug!
+      const { slug, ...cleanData } = formData;
       const response = await api.post('/trips', {
-        ...formData,
+        ...cleanData,
         destination: typedPlace
       });
       setCreatedTripId(response.data.id);
@@ -226,9 +227,20 @@ const CreateTrip = () => {
           </div>
         </div>
 
-        <div className="pt-2 border-t border-gray-50 flex justify-between items-center text-xs text-gray-400 font-bold">
-          <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> Visibility: {formData.visibility}</span>
-          <span>Est. Budget: {formData.currency} {formData.budgetEstimate}</span>
+        <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400 font-bold">
+          <div className="flex flex-col gap-1">
+            <span className="flex items-center gap-1.5 text-gray-400"><Eye className="w-4 h-4 text-purple-400" /> Visibility: {formData.visibility}</span>
+            <span>Est. Budget: {formData.currency} {formData.budgetEstimate}</span>
+          </div>
+          
+          <button 
+            type="submit"
+            disabled={loading}
+            className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-full font-black text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 shadow-xl shadow-purple-500/20 active:scale-95 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4.5 h-4.5 stroke-[3px]" />}
+            <span>Plan a trip</span>
+          </button>
         </div>
       </form>
 
@@ -298,17 +310,6 @@ const CreateTrip = () => {
         </div>
       </section>
 
-      {/* Main Submit Action Button (Plan a Trip Aligned Bottom Right) */}
-      <div className="flex justify-end pt-4">
-        <button 
-          onClick={handleSubmit}
-          disabled={loading}
-          className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-full font-black text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 shadow-xl shadow-purple-500/20 active:scale-95 disabled:opacity-50"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4.5 h-4.5 stroke-[3px]" />}
-          <span>Plan a trip</span>
-        </button>
-      </div>
     </div>
   );
 };
