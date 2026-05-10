@@ -55,7 +55,24 @@ export class AIService {
       },
       recommendations: {
         packing: packingSuggestions,
-        paceAdvice: trip.travelPace === 'Packed' ? "Incorporate 2-hour 'Buffer Zones' every afternoon to prevent burnout." : "Stable pace detected."
+        paceAdvice: trip.travelPace === 'Packed' ? "Incorporate 2-hour 'Buffer Zones' every afternoon to prevent burnout." : "Stable pace detected.",
+        itineraries: [
+          {
+            title: "The Cultural Deep-Dive",
+            description: "Focus on historic districts, traditional tea houses, and local artisan workshops.",
+            stops: ["Asakusa District", "Meiji Jingu Shrine", "Kyoto Gion District"]
+          },
+          {
+            title: "The Adventure Rush",
+            description: "High-energy path involving rooftop observatories, neon-lit gaming districts, and urban hiking.",
+            stops: ["Shibuya Sky", "Akihabara Electric Town", "Mount Takao"]
+          },
+          {
+            title: "The Leisure Loop",
+            description: "A relaxed pace focusing on luxury gardens, cafe-hopping, and slow city walks.",
+            stops: ["Shinjuku Gyoen", "Daikanyama Boutiques", "Ueno Park Museums"]
+          }
+        ]
       },
       model: "Gemini-1.5-Pro-Travel-Spec",
       confidence: 0.92

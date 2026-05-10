@@ -5,7 +5,8 @@ import {
   Calendar, MapPin, DollarSign, Package, FileText, 
   ChevronLeft, Plus, Clock, Trash2, CheckCircle2, Circle,
   BarChart3, TrendingDown, AlertCircle,
-  Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
+  Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp,
+  Brain, Compass, Feather, Navigation
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import api from '../api/axios';
@@ -252,18 +253,61 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
             </div>
           ))
         ) : (
-          <div className="pl-12 py-32 text-center bg-gray-50/50 rounded-[4rem] border-4 border-dashed border-gray-200 mx-8">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl border border-gray-50">
-              <MapPin className="w-12 h-12 text-gray-200" />
+          <div className="col-span-full space-y-12">
+            <div className="text-center py-20 bg-gray-50/50 rounded-[4rem] border-4 border-dashed border-gray-200 mx-8">
+              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl border border-gray-50">
+                <MapPin className="w-12 h-12 text-gray-200" />
+              </div>
+              <h4 className="text-3xl font-black text-gray-900 mb-2">Build your path</h4>
+              <p className="text-gray-500 font-medium mb-10 max-w-sm mx-auto">Add your first city stop or choose from our AI-curated discovery paths below.</p>
+              <button 
+                onClick={() => setShowAddStop(true)}
+                className="bg-blue-600 text-white px-12 py-5 rounded-[2rem] font-black text-xl shadow-2xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+              >
+                Add First Stop
+              </button>
             </div>
-            <h4 className="text-2xl font-black text-gray-900 mb-2">Build your path</h4>
-            <p className="text-gray-500 font-medium mb-10 max-w-sm mx-auto">Add your first city stop to begin constructing your daily itinerary.</p>
-            <button 
-              onClick={() => setShowAddStop(true)}
-              className="bg-blue-600 text-white px-12 py-5 rounded-[2rem] font-black text-xl shadow-2xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
-            >
-              Add First Stop
-            </button>
+
+            <div className="px-8">
+               <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                     <Brain className="w-6 h-6" />
+                  </div>
+                  <div>
+                     <h4 className="text-2xl font-black text-gray-900 tracking-tight">AI Discovery Paths</h4>
+                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Curated by Gemini 1.5 Pro</p>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {trip.aiAnalysis?.recommendations?.itineraries?.map((itinerary: any, i: number) => (
+                    <motion.div 
+                      key={i}
+                      whileHover={{ y: -10 }}
+                      className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-xl relative overflow-hidden group cursor-pointer"
+                    >
+                       <div className="relative z-10">
+                          <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                             {i === 0 ? <Feather className="w-7 h-7" /> : i === 1 ? <Navigation className="w-7 h-7" /> : <Compass className="w-7 h-7" />}
+                          </div>
+                          <h5 className="text-xl font-black text-gray-900 mb-3">{itinerary.title}</h5>
+                          <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6 italic">"{itinerary.description}"</p>
+                          
+                          <div className="space-y-3 pt-6 border-t border-gray-50">
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recommended Stops</p>
+                             {itinerary.stops.map((stop: string, sIdx: number) => (
+                               <div key={sIdx} className="flex items-center gap-3">
+                                  <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                  <p className="text-sm font-bold text-gray-700">{stop}</p>
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                       <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </motion.div>
+                  ))}
+               </div>
+            </div>
           </div>
         )}
       </div>
