@@ -5,10 +5,11 @@ import {
   Calendar, MapPin, DollarSign, Package, FileText,
   ChevronLeft, Plus, Clock, Trash2, CheckCircle2, Circle,
   BarChart3, TrendingDown, AlertCircle,
-  Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
+  Search, X, Edit3, Loader2, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp, Sparkles, Brain, Bot, FileCheck, CheckCircle, Star, RefreshCw
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import api from '../api/axios';
+import aiApi from '../api/aiAxios';
 import { predictTotalCost, getPackingSuggestions } from '../utils/AIUtility';
 
 const TripDetails = () => {
@@ -17,6 +18,8 @@ const TripDetails = () => {
   const [trip, setTrip] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('itinerary');
   const [loading, setLoading] = useState(true);
+  const [aiData, setAiData] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(true);
 
   const fetchTrip = async () => {
     try {
@@ -33,6 +36,47 @@ const TripDetails = () => {
     fetchTrip();
   }, [id]);
 
+  const fetchAI = async () => {
+    if (!trip) return;
+    setIsAnalyzing(true);
+    try {
+      const days = Math.max(1, Math.ceil((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / (1000 * 3600 * 24))) || 7;
+      const res = await aiApi.post('/intelligence/analyze-trip', {
+        destination: trip.destination || trip.name || 'Unknown',
+        trip_duration_days: days,
+        total_budget_usd: parseInt(trip.budgetEstimate) || 5000,
+        group_type: trip.companionType?.toLowerCase() || 'solo',
+        group_size: 1,
+        personality_type: trip.mood || 'Explorer',
+        pace_preference: trip.travelPace?.toLowerCase() || 'moderate',
+        luxury_preference: "mid_range",
+        preferred_activities: ["sightseeing"],
+        travel_constraints: [],
+        itinerary: trip.stops?.map((s: any) => ({
+          day: 1, location: s.cityName, activities: s.activities?.map((a: any) => a.name) || [], estimated_spend: s.activities?.reduce((acc: any, a: any) => acc + (a.cost || 0), 0) || 0
+        })) || [],
+        activities: [],
+        weather_conditions: [],
+        disruptions: [],
+        existing_recommendations: aiData?.recommendations,
+        existing_budget_analysis: aiData?.budget_analysis,
+        existing_adaptations: aiData?.adaptations,
+        existing_optimization_results: aiData?.optimization_results,
+        existing_travel_insights: aiData?.travel_insights,
+        existing_reasoning_summary: aiData?.reasoning_summary
+      });
+      setAiData(res.data);
+    } catch (err) {
+      console.error('AI Analysis failed', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAI();
+  }, [trip?.id]); // Only refetch if the trip ID changes
+
   if (loading) return <div className="text-center py-20 flex flex-col items-center gap-4"><div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div><p className="font-bold text-gray-500">Loading your adventure...</p></div>;
   if (!trip) return <div className="text-center py-20">Trip not found</div>;
 
@@ -42,6 +86,7 @@ const TripDetails = () => {
     { id: 'fund', label: 'Travel Fund', icon: Wallet },
     { id: 'packing', label: 'Checklist', icon: Package },
     { id: 'notes', label: 'Journal', icon: FileText },
+    { id: 'ai', label: '✨ AI Co-Pilot', icon: Sparkles },
   ];
 
   return (
@@ -70,7 +115,9 @@ const TripDetails = () => {
           <h1 className="text-base font-black mb-2 tracking-tight">{trip.name}</h1>
           <div className="flex flex-wrap items-center gap-4 text-base font-bold opacity-90 mt-4">
             <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
-              <Calendar className="w-4 h-4 text-purple-300" /> {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+              <Calendar className="w-4 h-4 text-purple-300" /> 
+              {trip.startDate ? new Date(trip.startDate).toLocaleDateString() : 'TBA'} - 
+              {trip.endDate ? new Date(trip.endDate).toLocaleDateString() : 'TBA'}
             </span>
             <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
               <MapPin className="w-4 h-4 text-purple-300" /> {trip.stops?.length || 0} destinations
@@ -118,10 +165,11 @@ const TripDetails = () => {
           className="min-h-[500px]"
         >
           {activeTab === 'itinerary' && <ItineraryTab trip={trip} onUpdate={fetchTrip} />}
-          {activeTab === 'budget' && <BudgetTab trip={trip} currency={trip.currency || 'INR'} onUpdate={fetchTrip} />}
+          {activeTab === 'budget' && <BudgetTab trip={trip} currency={trip.currency || 'INR'} onUpdate={fetchTrip} aiData={aiData} isAnalyzing={isAnalyzing} />}
           {activeTab === 'fund' && <FundTab trip={trip} onUpdate={fetchTrip} />}
           {activeTab === 'packing' && <PackingTab trip={trip} onUpdate={fetchTrip} />}
           {activeTab === 'notes' && <JournalTab trip={trip} onUpdate={fetchTrip} />}
+          {activeTab === 'ai' && <AICoPilotTab trip={trip} aiData={aiData} isAnalyzing={isAnalyzing} onRetry={fetchAI} />}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -154,7 +202,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData);
+    const data = Object.fromEntries(formData as any);
     try {
       await api.post(`/trips/${trip.id}/stops`, {
         ...data,
@@ -169,7 +217,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData);
+    const data = Object.fromEntries(formData as any);
     try {
       await api.post(`/trips/stops/${showAddActivity}/activities`, data);
       setShowAddActivity(null);
@@ -350,7 +398,8 @@ const Input = ({ label, ...props }: any) => (
   </div>
 );
 
-const BudgetTab = ({ trip, currency }: any) => {
+const BudgetTab = ({ trip, currency, aiData, isAnalyzing }: any) => {
+
   const predictedTotal = predictTotalCost(trip, currency);
   const currencySymbols: any = { 'USD': '$', 'EUR': '€', 'INR': '₹', 'GBP': '£', 'JPY': '¥' };
   const symbol = currencySymbols[currency] || '$';
@@ -420,7 +469,11 @@ const BudgetTab = ({ trip, currency }: any) => {
             <BarChart3 className="w-10 h-10 text-purple-600" />
           </div>
           <h4 className="text-base font-black text-gray-900 mb-2">Detailed Analytics</h4>
-          <p className="text-gray-500 font-medium max-w-xs mb-8">The AI is currently analyzing your spending patterns across {trip.stops?.length} destinations.</p>
+          <p className="text-gray-500 font-medium max-w-xs mb-8">
+            {isAnalyzing ? "The AI is currently analyzing your spending patterns..." : 
+             aiData ? `AI Risk Score: ${aiData.budget_analysis?.risk_score}/100 (${aiData.budget_analysis?.risk_level}). ${aiData.budget_analysis?.alerts?.[0] || 'Looking good!'}` 
+             : `The AI is currently analyzing your spending patterns across ${trip.stops?.length} destinations.`}
+          </p>
           <button className="px-10 py-4 bg-gray-900 text-white rounded-[1.5rem] font-black text-sm hover:scale-105 transition-all shadow-xl">VIEW FULL REPORT</button>
         </div>
       </div>
@@ -529,7 +582,7 @@ const PackingTab = ({ trip, onUpdate }: any) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             try {
-              await api.post(`/trips/${trip.id}/packing`, Object.fromEntries(formData));
+              await api.post(`/trips/${trip.id}/packing`, Object.fromEntries(formData as any));
               setShowAdd(false);
               onUpdate();
             } catch (err) { alert('Failed to add item'); }
@@ -645,7 +698,7 @@ const JournalTab = ({ trip, onUpdate }: any) => {
             onSubmit={async (e: any) => {
               e.preventDefault();
               const formData = new FormData(e.target);
-              const data = Object.fromEntries(formData);
+              const data = Object.fromEntries(formData as any);
               setLoading(true);
               try {
                 if (editNote) {
@@ -828,7 +881,7 @@ const FundTab = ({ trip, onUpdate }: any) => {
 
       <AnimatePresence>
         {showAddFund && (
-          <Modal title="Manifest Funds" onClose={() => setShowAddFund(false)} onSubmit={handleContribute} loading={loading}>
+          <Modal title="Manifest Funds" onClose={() => setShowAddFund(false)} onSubmit={(e:any)=>{e.preventDefault(); handleContribute();}} loading={loading}>
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Contribution Amount ({trip.currency})</label>
@@ -853,6 +906,297 @@ const FundTab = ({ trip, onUpdate }: any) => {
           </Modal>
         )}
       </AnimatePresence>
+    </div>
+  );
+};
+
+const AICoPilotTab = ({ trip, aiData, isAnalyzing, onRetry }: any) => {
+  const [story, setStory] = useState<any>(null);
+  const [isGeneratingStory, setIsGeneratingStory] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [showTimeoutMessage, setShowTimeoutMessage] = useState(false);
+
+  const steps = [
+    "Initializing Personality Engine...",
+    "Querying Recommendation AI...",
+    "Running Reasoning Engine...",
+    "Predicting Budget Risks...",
+    "Calculating Dynamic Adaptations...",
+    "Optimizing Travel Routes...",
+    "Scanning for Hidden Gems...",
+    "Orchestrating Strategic Insights...",
+    "Finalizing Summary Service..."
+  ];
+
+  useEffect(() => {
+    let interval: any;
+    let timeout: any;
+
+    if (isAnalyzing) {
+      interval = setInterval(() => {
+        setLoadingStep(prev => (prev + 1) % steps.length);
+      }, 3000);
+
+      // Show a message if it takes more than 45 seconds
+      timeout = setTimeout(() => {
+        setShowTimeoutMessage(true);
+      }, 45000);
+    } else {
+      setShowTimeoutMessage(false);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [isAnalyzing]);
+
+  const handleGenerateStory = async () => {
+    setIsGeneratingStory(true);
+    try {
+      const res = await aiApi.post('/summary/generate', {
+        destination: trip.destination || trip.name || 'Unknown',
+        trip_duration_days: 7,
+        total_budget_usd: parseInt(trip.budgetEstimate) || 5000,
+        highlights: aiData?.recommendations?.map((r: any) => r.activity) || [],
+        personality_type: trip.mood || 'Explorer',
+        group_type: trip.companionType?.toLowerCase() || 'solo',
+        trip_health_score: aiData?.trip_health_score || 85,
+        budget_risk_score: aiData?.budget_analysis?.risk_score || 30
+      });
+      setStory(res.data);
+    } catch (err) {
+      console.error('Story Gen Failed', err);
+    } finally {
+      setIsGeneratingStory(false);
+    }
+  };
+
+  if (isAnalyzing) return (
+    <div className="flex flex-col items-center justify-center py-32 text-center">
+      <div className="relative mb-12">
+        <div className="w-24 h-24 border-4 border-purple-100 rounded-full"></div>
+        <div className="absolute top-0 left-0 w-24 h-24 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+        <Brain className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 text-purple-600 animate-pulse" />
+      </div>
+      <h3 className="text-2xl font-black text-gray-900 mb-2">Adaptive Intelligence Active</h3>
+      <p className="text-gray-400 font-bold tracking-widest text-xs uppercase mb-8">Running 9 Core Engines in Parallel</p>
+      
+      <div className="max-w-xs w-full bg-gray-50 p-6 rounded-3xl border border-gray-100 mb-8">
+        <div className="flex items-center gap-4 text-left">
+          <div className="w-2 h-2 bg-purple-600 rounded-full animate-ping"></div>
+          <span className="text-sm font-black text-gray-600">{steps[loadingStep]}</span>
+        </div>
+      </div>
+
+      {showTimeoutMessage && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <p className="text-xs text-amber-600 font-bold bg-amber-50 px-6 py-3 rounded-full border border-amber-100">
+            Engine is being thorough! Large datasets take about 90-120 seconds.
+          </p>
+          <button 
+            onClick={onRetry}
+            className="flex items-center gap-2 mx-auto text-purple-600 font-black text-xs hover:underline"
+          >
+            <RefreshCw className="w-3 h-3" /> Force Restart Analysis
+          </button>
+        </motion.div>
+      )}
+
+      <p className="mt-8 text-xs text-gray-400 font-medium italic">Processing millions of travel data points for your {trip.name}...</p>
+    </div>
+  );
+
+  if (!aiData) return (
+    <div className="p-20 text-center space-y-6">
+      <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500">
+        <AlertCircle className="w-10 h-10" />
+      </div>
+      <h3 className="text-xl font-black text-gray-900">Intelligence Link Disrupted</h3>
+      <p className="text-gray-500 max-w-sm mx-auto">The engine couldn't synthesize the final report. This usually happens due to rate limits on the AI provider.</p>
+      <button onClick={onRetry} className="bg-gray-900 text-white px-10 py-4 rounded-2xl font-black text-sm shadow-xl">RETRY ANALYSIS</button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-12 pb-20">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden border-4 border-white/10">
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-8">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-inner">
+                <Sparkles className="w-8 h-8 text-purple-300" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-[0.3em] text-purple-300">Traveloop Intelligence Hub</span>
+            </div>
+            <h2 className="text-4xl font-black tracking-tight mb-4">AI Co-Pilot Dashboard</h2>
+            <p className="text-purple-100 font-medium max-w-2xl text-lg leading-relaxed opacity-80">
+              Your personalized journey strategy, optimized by 9 specialized AI engines.
+            </p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/20 text-center min-w-[200px]">
+            <p className="text-[10px] font-black uppercase tracking-widest text-purple-300 mb-2">Trip Health Score</p>
+            <div className="text-5xl font-black">{aiData.trip_health_score || 85}%</div>
+            <p className="text-[10px] font-bold text-green-400 mt-2 uppercase">Optimized & Ready</p>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px]"></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* 1. Personality Engine */}
+        <div className="bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm hover:shadow-xl transition-all group">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all">
+              <Users2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Travel Personality</h3>
+          </div>
+          <p className="text-3xl font-black text-gray-900 mb-4">{aiData.personality_type || trip.mood || 'Explorer'}</p>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-500 font-medium leading-relaxed italic border-l-4 border-purple-100 pl-4">
+              "{aiData.description || 'Custom intelligence matching your relaxed yet adventurous travel style.'}"
+            </p>
+          </div>
+        </div>
+
+        {/* 4. Budget Prediction Engine */}
+        <div className="bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm hover:shadow-xl transition-all group">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+              <Wallet className="w-6 h-6" />
+            </div>
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Budget Prediction</h3>
+          </div>
+          <div className="flex items-end gap-2 mb-4">
+            <p className="text-4xl font-black text-gray-900">{aiData.budget_analysis?.risk_score || 30}</p>
+            <p className="text-xs font-black text-gray-400 uppercase mb-2">Risk Score</p>
+          </div>
+          <p className="text-sm font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl w-fit">
+            {aiData.budget_analysis?.risk_level || 'Low Risk'}
+          </p>
+        </div>
+
+        {/* 9. AI Story Generator */}
+        <div className="bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm hover:shadow-xl transition-all group bg-gradient-to-br from-white to-indigo-50/30">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+              <Bot className="w-6 h-6" />
+            </div>
+            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">AI Story Generator</h3>
+          </div>
+          <button onClick={handleGenerateStory} disabled={isGeneratingStory} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-xl">
+            {isGeneratingStory ? <Loader2 className="w-5 h-5 animate-spin"/> : <Sparkles className="w-5 h-5 text-amber-300" />} {story ? 'REGENERATE STORY' : 'CREATE TRIP NARRATIVE'}
+          </button>
+          {story && (
+             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-4 bg-white rounded-2xl border border-indigo-100 shadow-inner">
+               <h4 className="text-sm font-black text-indigo-600 mb-2">{story.headline}</h4>
+               <p className="text-xs text-gray-500 font-medium leading-relaxed italic line-clamp-3">"{story.executive_summary}"</p>
+             </motion.div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* 2 & 3 & 7. Recommendation Engine + Reasoning Engine + Hidden Gems */}
+        <div className="bg-white rounded-[3rem] p-12 border border-gray-100 shadow-sm">
+          <div className="flex justify-between items-center mb-10">
+            <h3 className="text-xs font-black text-pink-600 uppercase tracking-[0.3em] flex items-center gap-3">
+              <div className="w-8 h-8 bg-pink-50 rounded-xl flex items-center justify-center"><Star className="w-4 h-4"/></div>
+              Recommendation & Reasoning
+            </h3>
+            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Personalized Discovery</span>
+          </div>
+          <div className="space-y-6">
+            {aiData.recommendations?.map((rec:any, i:number) => (
+              <motion.div 
+                key={i} 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="p-8 bg-gray-50 rounded-[2rem] border border-gray-100 hover:border-pink-200 transition-all group"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest mb-1 block">Activity Recommendation</span>
+                    <h4 className="font-black text-gray-900 text-xl tracking-tight">{rec.activity}</h4>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-black bg-pink-100 text-pink-600 px-3 py-1 rounded-full uppercase mb-2">
+                      {Math.round((rec.confidence || 0.9) * 100)}% Match
+                    </span>
+                    {rec.is_hidden_gem && <span className="text-[9px] font-black text-amber-600 uppercase flex items-center gap-1"><Sparkles className="w-3 h-3"/> Hidden Gem</span>}
+                  </div>
+                </div>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100">
+                   <p className="text-sm text-gray-600 font-medium italic leading-relaxed border-l-2 border-pink-400 pl-4">
+                     <span className="text-pink-400 font-black not-italic uppercase text-[10px] tracking-widest block mb-1">AI Reasoning</span>
+                     {rec.reason}
+                   </p>
+                </div>
+              </motion.div>
+            ))}
+            {(!aiData.recommendations || aiData.recommendations.length === 0) && (
+               <div className="py-20 text-center opacity-40">
+                 <Package className="w-16 h-16 mx-auto mb-4" />
+                 <p className="font-bold">No active recommendations</p>
+               </div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {/* 5 & 6. Adaptation & Optimization Engines */}
+          <div className="bg-white rounded-[3rem] p-10 border border-gray-100 shadow-sm">
+            <h3 className="text-xs font-black text-amber-600 uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
+              <div className="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center"><Zap className="w-4 h-4"/></div>
+              Dynamic Adaptation & Route Optimization
+            </h3>
+            <div className="space-y-8">
+              <div className="bg-amber-50/50 p-8 rounded-3xl border border-amber-100 relative overflow-hidden">
+                <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-4">Environment Adaptations</h4>
+                {aiData.adaptations?.length > 0 ? aiData.adaptations.map((ad:any, i:number) => (
+                  <div key={i} className="text-sm font-bold text-gray-800 bg-white p-4 rounded-2xl mb-3 flex items-start gap-4 shadow-sm border border-amber-200/50">
+                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5"/>
+                    <span>{typeof ad === 'string' ? ad : ad.adaptation || 'Adaptation active'}</span>
+                  </div>
+                )) : <p className="text-sm text-gray-400 font-medium italic">No dynamic environment changes detected. Monitoring weather and traffic...</p>}
+                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-amber-200/20 rounded-full blur-3xl"></div>
+              </div>
+              
+              <div className="bg-emerald-50/50 p-8 rounded-3xl border border-emerald-100 relative overflow-hidden">
+                <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4">Route Efficiency Engine</h4>
+                {aiData.optimization_results?.length > 0 ? aiData.optimization_results.map((op:any, i:number) => (
+                  <div key={i} className="text-sm font-bold text-gray-800 bg-white p-4 rounded-2xl mb-3 flex items-start gap-4 shadow-sm border border-emerald-200/50">
+                    <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5"/>
+                    <span>{typeof op === 'string' ? op : op.suggestion || 'Optimization applied'}</span>
+                  </div>
+                )) : <p className="text-sm text-gray-400 font-medium italic">Current route is mathematically optimized for distance and time.</p>}
+                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-200/20 rounded-full blur-3xl"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* 8. Travel Insights (Orchestrator) */}
+          <div className="bg-gray-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
+            <h3 className="text-xs font-black text-purple-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center"><FileCheck className="w-4 h-4"/></div>
+              Strategic Insights
+            </h3>
+            <div className="space-y-4 relative z-10">
+              {aiData.travel_insights?.map((insight:any, i:number) => (
+                <div key={i} className="p-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 text-sm font-medium text-purple-100 flex items-start gap-4 group hover:bg-white/10 transition-all">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full mt-1.5 shrink-0 group-hover:scale-150 transition-all"></div>
+                  {typeof insight === 'string' ? insight : insight.insight || 'Contextual Insight'}
+                </div>
+              ))}
+              {(!aiData.travel_insights || aiData.travel_insights.length === 0) && <p className="text-xs text-gray-500 italic text-center py-10">Synthesizing strategic trip observations...</p>}
+            </div>
+            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px]"></div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

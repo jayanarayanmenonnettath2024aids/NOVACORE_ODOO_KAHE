@@ -6,6 +6,7 @@ import {
   Sparkles, CheckCircle2, Loader2, Plus, Star, Map, Plane, Eye, ArrowRight
 } from 'lucide-react';
 import api from '../api/axios';
+import aiApi from '../api/aiAxios';
 
 const suggestionBank = [
   {
@@ -64,6 +65,8 @@ const CreateTrip = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [typedPlace, setTypedPlace] = useState('');
   const [createdTripId, setCreatedTripId] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   // Primary Form fields mapped to wireframe & schemas
   const [formData, setFormData] = useState({
@@ -133,8 +136,46 @@ const CreateTrip = () => {
     }
   };
 
+  const handleGenerateAISuggestions = async () => {
+    setIsGeneratingAI(true);
+    try {
+      const days = formData.startDate && formData.endDate 
+        ? Math.max(1, Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 3600 * 24))) 
+        : 7;
+      const response = await aiApi.post('/personality/analyze', {
+        budget_range_usd: parseInt(formData.budgetEstimate) || 5000,
+        preferred_activities: ["sightseeing", "exploring"],
+        pace_preference: formData.travelPace.toLowerCase(),
+        luxury_preference: "mid_range",
+        group_type: formData.companionType.toLowerCase(),
+        travel_duration_days: days,
+        additional_notes: `Mood: ${formData.mood}`
+      });
+      
+      const newSuggestions = response.data.ideal_destinations.map((dest: string, idx: number) => ({
+        place: dest,
+        type: formData.type,
+        cover: [
+          'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e',
+          'https://images.unsplash.com/photo-1502602898657-3e91760cbb34',
+          'https://images.unsplash.com/photo-1537996194471-e657df975ab4'
+        ][idx % 3] + '?auto=format&fit=crop&w=400&q=80',
+        description: response.data.description || `AI Recommended destination for a ${response.data.personality_type}.`,
+        highlights: response.data.recommended_trip_styles.join(', '),
+        mood: formData.mood
+      }));
+      setAiSuggestions(newSuggestions);
+    } catch (err) {
+      console.error('AI Generation Failed:', err);
+      alert('Failed to generate AI suggestions. Check if AI service is running and API key is set.');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
   // Filter suggestion list dynamically in real-time as they type
-  const filteredSuggestions = suggestionBank.filter(item => 
+  const baseList = aiSuggestions.length > 0 ? aiSuggestions : suggestionBank;
+  const filteredSuggestions = baseList.filter(item => 
     item.place.toLowerCase().includes(typedPlace.toLowerCase()) ||
     item.highlights.toLowerCase().includes(typedPlace.toLowerCase())
   );
@@ -224,6 +265,62 @@ const CreateTrip = () => {
               onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
             />
           </div>
+
+          {/* Est. Budget input */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Est. Budget (USD):</label>
+            <input 
+              type="number"
+              className="w-full px-6 py-4 rounded-xl bg-gray-50 border-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700"
+              value={formData.budgetEstimate}
+              onChange={(e) => setFormData({ ...formData, budgetEstimate: e.target.value })}
+            />
+          </div>
+
+          {/* Companion Type input */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Companion Type:</label>
+            <select 
+              className="w-full px-6 py-4 rounded-xl bg-gray-50 border-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700 appearance-none"
+              value={formData.companionType}
+              onChange={(e) => setFormData({ ...formData, companionType: e.target.value })}
+            >
+              <option value="Solo">Solo</option>
+              <option value="Couple">Couple</option>
+              <option value="Family">Family</option>
+              <option value="Friends">Friends</option>
+            </select>
+          </div>
+
+          {/* Travel Pace input */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Travel Pace:</label>
+            <select 
+              className="w-full px-6 py-4 rounded-xl bg-gray-50 border-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700 appearance-none"
+              value={formData.travelPace}
+              onChange={(e) => setFormData({ ...formData, travelPace: e.target.value })}
+            >
+              <option value="Relaxed">Relaxed</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Fast">Fast-paced</option>
+            </select>
+          </div>
+
+          {/* Mood input */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Trip Mood:</label>
+            <select 
+              className="w-full px-6 py-4 rounded-xl bg-gray-50 border-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700 appearance-none"
+              value={formData.mood}
+              onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
+            >
+              <option value="Culture">Culture & History</option>
+              <option value="Relaxation">Relaxation</option>
+              <option value="Adventure">Adventure</option>
+              <option value="Party">Party & Nightlife</option>
+              <option value="Nature">Nature & Wildlife</option>
+            </select>
+          </div>
         </div>
 
         <div className="pt-2 border-t border-gray-50 flex justify-between items-center text-xs text-gray-400 font-bold">
@@ -232,11 +329,24 @@ const CreateTrip = () => {
         </div>
       </form>
 
+      {/* Main Submit Action Button (Plan a Trip Aligned Bottom Right) */}
+      <div className="flex justify-end pt-4 pb-4 border-b border-gray-100">
+        <button 
+          onClick={handleGenerateAISuggestions} 
+          disabled={isGeneratingAI} 
+          type="button" 
+          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full font-black text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 shadow-xl shadow-purple-500/20 active:scale-95 disabled:opacity-50"
+        >
+          {isGeneratingAI ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />} 
+          <span>Generate AI Destinations</span>
+        </button>
+      </div>
+
       {/* SECTION: Suggestion for Places to Visit / Activities to Perform */}
       <section className="space-y-6 pt-4">
         <div className="flex items-center gap-4">
           <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">
-            Suggestion for Places to Visit/Activities to perform
+            {aiSuggestions.length > 0 ? "✨ AI GENERATED ITINERARY OPTIONS" : "Suggestion for Places to Visit/Activities to perform"}
           </h2>
           <div className="w-full h-px bg-gray-200/80" />
         </div>
@@ -281,9 +391,10 @@ const CreateTrip = () => {
                 <button 
                   type="button"
                   onClick={() => handleSelectSuggestion(item)}
-                  className="w-full py-3 bg-purple-50 hover:bg-purple-600 text-purple-600 hover:text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer text-center"
+                  className="w-full py-3 bg-purple-50 hover:bg-purple-600 text-purple-600 hover:text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  Auto-fill Destination
+                  {aiSuggestions.length > 0 ? <Sparkles className="w-4 h-4" /> : null}
+                  <span>{aiSuggestions.length > 0 ? "AI AUTO-FILL DESTINATION" : "AUTO-FILL DESTINATION"}</span>
                 </button>
               </div>
             </motion.div>

@@ -12,8 +12,9 @@ export const createTrip = async (req: Request, res: Response) => {
     } = req.body;
     const userId = req.user!.userId;
 
-    // Auto-generate slug if not provided
-    const tripSlug = slug || `${name.toLowerCase().replace(/ /g, '-')}-${Date.now().toString().slice(-4)}`;
+    // Auto-generate unique slug (always append random entropy to prevent collisions)
+    const baseSlug = (slug || name).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+    const tripSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
 
     const trip = await prisma.trip.create({
       data: {
@@ -71,7 +72,7 @@ export const getTripById = async (req: Request, res: Response) => {
     const userId = req.user!.userId;
 
     const trip = await prisma.trip.findFirst({
-      where: { id, userId },
+      where: { id: id as string, userId: userId as string },
       include: {
         stops: {
           include: {
@@ -93,7 +94,7 @@ export const getTripById = async (req: Request, res: Response) => {
 
     let aiAnalysis = null;
     try {
-      aiAnalysis = await AIService.analyzeTrip(id);
+      aiAnalysis = await AIService.analyzeTrip(id as string);
     } catch (aiError) {
       console.error('AI Analysis failed, skipping:', aiError);
     }
@@ -119,11 +120,11 @@ export const updateTrip = async (req: Request, res: Response) => {
       primaryDestination, discoveryStrategy
     } = req.body;
 
-    const trip = await prisma.trip.findFirst({ where: { id, userId } });
+        const trip = await prisma.trip.findFirst({ where: { id: id as string, userId: userId as string } });
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
 
     const updatedTrip = await prisma.trip.update({
-      where: { id },
+      where: { id: id as string },
       data: {
         name,
         slug,
@@ -158,10 +159,10 @@ export const deleteTrip = async (req: Request, res: Response) => {
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const trip = await prisma.trip.findFirst({ where: { id, userId } });
+        const trip = await prisma.trip.findFirst({ where: { id: id as string, userId: userId as string } });
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
 
-    await prisma.trip.delete({ where: { id } });
+    await prisma.trip.delete({ where: { id: id as string } });
 
     res.json({ message: 'Trip deleted successfully' });
   } catch (error) {
@@ -177,14 +178,14 @@ export const addStop = async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     
     // Verify ownership
-    const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
+    const trip = await prisma.trip.findFirst({ where: { id: tripId as string, userId: userId as string } });
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
 
     const { cityName, country, startDate, endDate, orderIndex } = req.body;
     
     const stop = await prisma.stop.create({
       data: {
-        tripId,
+        tripId: tripId as string,
         cityName,
         country,
         startDate: startDate ? new Date(startDate) : null,
@@ -206,7 +207,7 @@ export const addActivity = async (req: Request, res: Response) => {
 
     const activity = await prisma.activity.create({
       data: {
-        stopId,
+        stopId: stopId as string,
         name,
         description,
         cost: cost || 0,
@@ -228,8 +229,8 @@ export const getBudget = async (req: Request, res: Response) => {
     const { tripId } = req.params;
     const userId = req.user!.userId;
     
-    const trip = await prisma.trip.findFirst({
-      where: { id: tripId, userId },
+    const trip: any = await prisma.trip.findFirst({
+      where: { id: tripId as string, userId: userId as string },
       include: {
         stops: { include: { activities: true } },
         expenses: true
@@ -254,7 +255,7 @@ export const getBudget = async (req: Request, res: Response) => {
     expensesByCategory['Activities'] = (expensesByCategory['Activities'] || 0) + totalActivities;
 
     res.json({
-      totalCost: Object.values(expensesByCategory).reduce((a, b) => a + b, 0),
+      totalCost: Object.values(expensesByCategory).reduce((a: number, b: number) => a + b, 0),
       breakdown: expensesByCategory
     });
   } catch (error) {
@@ -269,7 +270,7 @@ export const addPackingItem = async (req: Request, res: Response) => {
     const { tripId } = req.params;
     const { name, category } = req.body;
     const item = await prisma.packingItem.create({
-      data: { tripId, name, category }
+      data: { tripId: tripId as string, name, category }
     });
     res.status(201).json(item);
   } catch (error) {
@@ -280,11 +281,11 @@ export const addPackingItem = async (req: Request, res: Response) => {
 export const togglePackingItem = async (req: Request, res: Response) => {
   try {
     const { itemId } = req.params;
-    const item = await prisma.packingItem.findUnique({ where: { id: itemId } });
+    const item = await prisma.packingItem.findUnique({ where: { id: itemId as string } });
     if (!item) return res.status(404).json({ error: 'Item not found' });
 
     const updated = await prisma.packingItem.update({
-      where: { id: itemId },
+      where: { id: itemId as string },
       data: { isPacked: !item.isPacked }
     });
     res.json(updated);
@@ -296,7 +297,7 @@ export const togglePackingItem = async (req: Request, res: Response) => {
 export const deletePackingItem = async (req: Request, res: Response) => {
   try {
     const { itemId } = req.params;
-    await prisma.packingItem.delete({ where: { id: itemId } });
+    await prisma.packingItem.delete({ where: { id: itemId as string } });
     res.json({ message: 'Item removed' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to remove packing item' });
@@ -307,7 +308,7 @@ export const resetPackingItems = async (req: Request, res: Response) => {
   try {
     const { tripId } = req.params;
     await prisma.packingItem.updateMany({
-      where: { tripId },
+      where: { tripId: tripId as string },
       data: { isPacked: false }
     });
     res.json({ message: 'Checklist reset' });
@@ -322,7 +323,7 @@ export const getPublicTrip = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const trip = await prisma.trip.findFirst({
-      where: { id, isPublic: true },
+      where: { id: id as string, isPublic: true },
       include: {
         stops: {
           include: { activities: { orderBy: { startTime: 'asc' } } },
@@ -344,8 +345,8 @@ export const cloneTrip = async (req: Request, res: Response) => {
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const sourceTrip = await prisma.trip.findUnique({
-      where: { id },
+    const sourceTrip: any = await prisma.trip.findUnique({
+      where: { id: id as string },
       include: {
         stops: { include: { activities: true } },
         packingItems: true
@@ -407,8 +408,8 @@ export const addContribution = async (req: Request, res: Response) => {
     
     // Get user name and trip for validation
     const [user, trip] = await Promise.all([
-      prisma.user.findUnique({ where: { id: userId } }),
-      prisma.trip.findUnique({ where: { id } })
+      prisma.user.findUnique({ where: { id: userId as string } }),
+      prisma.trip.findUnique({ where: { id: id as string } })
     ]);
 
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
@@ -421,7 +422,7 @@ export const addContribution = async (req: Request, res: Response) => {
     const [contribution] = await prisma.$transaction([
       prisma.contribution.create({
         data: {
-          tripId: id,
+          tripId: id as string,
           userId,
           userName: user?.name || 'Anonymous',
           amount: parseFloat(amount),
@@ -429,7 +430,7 @@ export const addContribution = async (req: Request, res: Response) => {
         }
       }),
       prisma.trip.update({
-        where: { id },
+        where: { id: id as string },
         data: {
           currentSavings: { increment: parseFloat(amount) }
         }
@@ -447,7 +448,7 @@ export const getContributions = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const contributions = await prisma.contribution.findMany({
-      where: { tripId: id },
+      where: { tripId: id as string },
       orderBy: { createdAt: 'desc' }
     });
     res.json(contributions);
