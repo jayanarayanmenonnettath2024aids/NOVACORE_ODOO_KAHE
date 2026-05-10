@@ -5,7 +5,14 @@ const Navbar = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  let user = null;
+  if (userStr && userStr !== 'undefined') {
+    try {
+      user = JSON.parse(userStr);
+    } catch (e) {
+      console.error('Failed to parse user from localStorage', e);
+    }
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('token');
