@@ -5,9 +5,9 @@ import {
   Calendar, MapPin, DollarSign, Package, FileText,
   ChevronLeft, ChevronDown, Plus, Clock, Trash2, CheckCircle2, Circle, Check,
   BarChart3, TrendingDown, AlertCircle,
-  Search, X, Edit3, Loader2, Users, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp, Sparkles, Brain, Bot, FileCheck, CheckCircle, Star, RefreshCw,
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
+  Search, X, Edit3, Loader2, Users, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp, Sparkles, Brain, Bot, FileCheck, CheckCircle, Star, RefreshCw
 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 import api from '../api/axios';
 import aiApi from '../api/aiAxios';
@@ -573,7 +573,6 @@ const BudgetTab = ({ trip, currency, aiData, isAnalyzing }: any) => {
     (stop.activities || []).reduce((s: number, a: any) => s + (Number(a.cost) || 0), 0);
 
   const actualCost = grandTotal;
-  const predictedTotal = trip.budgetEstimate || 0;
 
 
   return (
@@ -1368,7 +1367,6 @@ const FundTab = ({ trip, onUpdate }: any) => {
   );
 };
 
-<<<<<<< HEAD
 const AICoPilotTab = ({ trip, aiData, isAnalyzing, onRetry }: any) => {
   const [story, setStory] = useState<any>(null);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
@@ -1659,7 +1657,5 @@ const AICoPilotTab = ({ trip, aiData, isAnalyzing, onRetry }: any) => {
     </div>
   );
 };
-=======
->>>>>>> 81ecbd85d0164addfdfd2cd39142f468aceb6baf
 
 export default TripDetails;
