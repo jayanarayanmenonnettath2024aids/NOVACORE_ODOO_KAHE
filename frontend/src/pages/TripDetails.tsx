@@ -25,7 +25,7 @@ const TripDetails = () => {
       const response = await api.get(`/trips/${id}`);
       setTrip(response.data);
       // Automatically run analysis if trip has metadata
-      if (response.data.primaryDestination && !aiAnalysis) {
+      if (response.data?.primaryDestination && !aiAnalysis) {
         runAIAnalysis();
       }
     } catch (err) {
@@ -174,7 +174,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     try {
       await api.post(`/trips/${trip.id}/stops`, {
         ...data,
-        orderIndex: trip.stops.length
+        orderIndex: trip?.stops?.length || 0
       });
       setShowAddStop(false);
       onUpdate();
@@ -229,17 +229,17 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
              <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4 opacity-80">
                   <Sparkles className="w-5 h-5" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Model: {aiAnalysis.model}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Model: {aiAnalysis?.model || 'Traveloop-v1'}</span>
                 </div>
                 <h4 className="text-xl font-black mb-2">Discovery Reasoning</h4>
                 <p className="text-sm font-medium opacity-90 leading-relaxed">
-                  {aiAnalysis.reasoning.budget}
+                  {aiAnalysis?.reasoning?.budget || 'Calculating optimal budget strategies...'}
                 </p>
                 <div className="mt-6 flex items-center gap-3">
-                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${aiAnalysis.reasoning?.status === 'OPTIMIZED' ? 'bg-green-400/20 text-green-100' : 'bg-amber-400/20 text-amber-100'}`}>
-                    {aiAnalysis.reasoning?.status || 'ANALYZING'}
+                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${aiAnalysis?.reasoning?.status === 'OPTIMIZED' ? 'bg-green-400/20 text-green-100' : 'bg-amber-400/20 text-amber-100'}`}>
+                    {aiAnalysis?.reasoning?.status || 'ANALYZING'}
                   </span>
-                  <span className="text-xs font-bold">Suggested: ₹{aiAnalysis.reasoning?.suggestedAmount?.toLocaleString() || '---'}</span>
+                  <span className="text-xs font-bold">Suggested: ₹{aiAnalysis?.reasoning?.suggestedAmount?.toLocaleString() || '---'}</span>
                 </div>
              </div>
              <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -253,12 +253,12 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
                 AI Packing List
              </h4>
              <ul className="space-y-3">
-                {aiAnalysis.recommendations.packing.map((item: string, i: number) => (
+                {aiAnalysis?.recommendations?.packing?.map((item: string, i: number) => (
                   <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700">
                     <CheckCircle2 className="w-4 h-4 text-green-500" />
                     {item}
                   </li>
-                ))}
+                )) || <li className="text-gray-400 italic text-xs">Generating list...</li>}
              </ul>
           </div>
 
@@ -268,7 +268,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
                 Pace Advice
              </h4>
              <p className="text-sm font-bold text-gray-700 leading-relaxed mb-6 italic">
-                "{aiAnalysis.recommendations.paceAdvice}"
+                "{aiAnalysis?.recommendations?.paceAdvice || 'Analyzing travel pace...'}"
              </p>
              <div className="p-4 bg-purple-50 rounded-2xl">
                 <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-2">Strategy Used</p>
@@ -288,7 +288,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
               <div className="w-full h-px bg-gray-200/80" />
            </div>
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {aiAnalysis.recommendations.itineraries.map((it: any, idx: number) => (
+              {aiAnalysis?.recommendations?.itineraries?.map((it: any, idx: number) => (
                 <motion.div 
                   key={idx}
                   whileHover={{ y: -4 }}
@@ -500,7 +500,11 @@ const BudgetTab = ({ trip, currency }: any) => {
             <span className="text-purple-600">{Math.round((actualCost / predictedTotal) * 100) || 0}%</span>
           </div>
           <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: `${(actualCost / predictedTotal) * 100}%` }} className="h-full bg-purple-600 rounded-full"></motion.div>
+            <motion.div 
+              initial={{ width: 0 }} 
+              animate={{ width: `${Math.min(100, (actualCost / (predictedTotal || 1)) * 100)}%` }} 
+              className="h-full bg-purple-600 rounded-full"
+            ></motion.div>
           </div>
         </div>
         <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-8 rounded-[2.5rem] shadow-xl text-white">
@@ -714,7 +718,7 @@ const JournalTab = ({ trip, onUpdate }: any) => {
                 </div>
                 {note.stopId && (
                   <p className="flex items-center gap-1.5 text-sm font-bold text-purple-400">
-                    <MapPin className="w-3.5 h-3.5" /> Tied to {trip.stops.find((s: any) => s.id === note.stopId)?.cityName}
+                    <MapPin className="w-3.5 h-3.5" /> Tied to {trip?.stops?.find((s: any) => s.id === note.stopId)?.cityName || 'Unknown Stop'}
                   </p>
                 )}
               </div>

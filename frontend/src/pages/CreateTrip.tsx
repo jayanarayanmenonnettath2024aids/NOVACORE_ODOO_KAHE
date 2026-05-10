@@ -164,8 +164,8 @@ const CreateTrip = () => {
       </div>
 
       {/* Structured Wireframe Form */}
-      <form onSubmit={handleSubmit} className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-6 w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           
           {/* Trip Name input */}
           <div className="space-y-2">
@@ -346,29 +346,29 @@ const CreateTrip = () => {
             </div>
           </div>
 
-          {/* Start Date input */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Start Date:</label>
-            <input 
-              required
-              type="date"
-              className="w-full px-6 py-4 rounded-xl bg-gray-50 border-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            />
-          </div>
-
-          {/* End Date input */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">End Date:</label>
-            <input 
-              required
-              type="date"
-              min={formData.startDate}
-              className="w-full px-6 py-4 rounded-xl bg-gray-50 border-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700"
-              value={formData.endDate}
-              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            />
+          {/* Date range grid row */}
+          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Start Date:</label>
+              <input 
+                required
+                type="date"
+                className="w-full px-6 py-4 rounded-xl bg-gray-50 border-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">End Date:</label>
+              <input 
+                required
+                type="date"
+                min={formData.startDate}
+                className="w-full px-6 py-4 rounded-xl bg-gray-50 border-none font-bold text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              />
+            </div>
           </div>
 
           {/* Trip Mood selection */}
