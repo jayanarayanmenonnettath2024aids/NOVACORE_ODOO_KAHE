@@ -5,9 +5,32 @@ import {
   Plus, Calendar, MapPin, DollarSign, Clock, 
   CheckCircle2, Briefcase, Globe, Sun, 
   ChevronRight, Activity, Zap, Star, TrendingUp, ArrowRight,
-  AlertCircle, Navigation, Target, Sparkles, Heart, Wallet, Loader2
+  AlertCircle, Navigation, Target, Sparkles, Heart, Wallet, Loader2, Search, SlidersHorizontal, ArrowUpDown, Filter
 } from 'lucide-react';
 import api from '../api/axios';
+
+const bannerSlides = [
+  {
+    url: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=1200&q=80',
+    title: 'Sydney Opera House',
+    caption: 'Discovering the Extraordinary'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80',
+    title: 'Eiffel Tower',
+    caption: 'Experience Romance & Architecture'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80',
+    title: 'Tokyo Street Lights',
+    caption: 'Immerse Yourself in Future & Neon'
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
+    title: 'Tropical Bali Beaches',
+    caption: 'Relax on Pristine Sands & Lagoons'
+  }
+];
 
 const Dashboard = () => {
   const [data, setData] = useState<any>(null);
@@ -20,6 +43,16 @@ const Dashboard = () => {
   const [goalTitle, setGoalTitle] = useState('');
   const [addAmount, setAddAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // Slide Show Banner Index
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Interactive Filters & Sorting
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('All'); // 'All' | 'International' | 'National'
+  const [sortBy, setSortBy] = useState('date'); // 'date' | 'name' | 'progress'
+  const [showGoalsDrawer, setShowGoalsDrawer] = useState(false);
+
   const navigate = useNavigate();
 
   const fetchDashboard = async () => {
@@ -35,6 +68,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboard();
+  }, []);
+
+  // Slide interval timer for Banner
+  useEffect(() => {
+    const slideTimer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % bannerSlides.length);
+    }, 5000);
+    return () => clearInterval(slideTimer);
   }, []);
 
   const handleCreateGoal = async () => {
@@ -76,27 +117,21 @@ const Dashboard = () => {
   // Real-time Countdown Logic
   useEffect(() => {
     if (!data?.upcomingTrips?.[0]) return;
-    
     const target = new Date(data.upcomingTrips[0].startDate).getTime();
-    
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const distance = target - now;
-      
       if (distance < 0) {
         clearInterval(interval);
         setTimeLeft('ARRIVED');
         return;
       }
-      
       const days = Math.floor(distance / (1000 * 60 * 60 * 24));
       const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-      
       setTimeLeft({ days, hours, minutes, seconds });
     }, 1000);
-    
     return () => clearInterval(interval);
   }, [data]);
 
@@ -104,316 +139,429 @@ const Dashboard = () => {
 
   const nextTrip = data?.upcomingTrips?.[0];
 
+  // Filter & Sort Logic for Itineraries
+  const filteredTrips = (data?.upcomingTrips || [])
+    .filter((trip: any) => {
+      const matchesSearch = trip.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = filterType === 'All' || trip.type === filterType;
+      return matchesSearch && matchesType;
+    })
+    .sort((a: any, b: any) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'progress') {
+        const aProg = a.stops?.length || 0;
+        const bProg = b.stops?.length || 0;
+        return bProg - aProg;
+      }
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+    });
+
+  const curatedRegions = [
+    { name: 'East Asia', img: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=300&q=80', count: '12 Spots' },
+    { name: 'Western Europe', img: 'https://images.unsplash.com/photo-1486299267070-83823f5448dd?auto=format&fit=crop&w=300&q=80', count: '18 Spots' },
+    { name: 'Southeast Asia', img: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=300&q=80', count: '24 Spots' },
+    { name: 'North America', img: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=300&q=80', count: '15 Spots' },
+    { name: 'Oceania Islands', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80', count: '10 Spots' }
+  ];
+
   return (
-    <>
-      <div className="space-y-12 pb-20">
-        {/* AI Smart Hub Header */}
-        <div className="bg-gray-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/50">
-                   <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-sm font-black uppercase tracking-[0.3em] text-blue-400">AI SMART HUB</span>
-              </div>
-              <h1 className="text-6xl font-black mb-6 tracking-tight leading-none">Welcome back,<br/><span className="text-blue-500">Explorer!</span></h1>
-              <p className="text-gray-400 text-xl font-medium max-w-md">Your AI travel assistant has analyzed your upcoming plans and found new optimizations.</p>
+    <div className="dashboard-layout-wireframe space-y-8 pb-24">
+      {/* Plus Jakarta Sans professional font and styles */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
+        
+        .dashboard-layout-wireframe {
+          font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+        .dashboard-layout-wireframe * {
+          font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        /* Curated Custom Scrollbar for top regions */
+        .curated-scrollbar::-webkit-scrollbar {
+          height: 6px;
+        }
+        .curated-scrollbar::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.03);
+          border-radius: 10px;
+        }
+        .curated-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(147, 51, 234, 0.15);
+          border-radius: 10px;
+        }
+        .curated-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(147, 51, 234, 0.3);
+        }
+      `}</style>
+
+      {/* Hero Slideshow Banner Section */}
+      <div className="relative w-full h-[360px] rounded-[2.5rem] overflow-hidden shadow-2xl border border-gray-100">
+        <div className="absolute inset-0">
+          <AnimatePresence mode="wait">
+            <motion.img 
+              key={currentSlide}
+              src={bannerSlides[currentSlide].url} 
+              alt={bannerSlides[currentSlide].title}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="w-full h-full object-cover select-none pointer-events-none"
+            />
+          </AnimatePresence>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-purple-950/25" />
+        </div>
+        
+        {/* Banner Content Layout */}
+        <div className="absolute inset-0 p-10 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8 z-10 text-white">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full border border-white/10 text-purple-300 text-[10px] font-black uppercase tracking-widest">
+              <Sparkles className="w-4 h-4" />
+              <span>Slideshow Banner • {currentSlide + 1} of {bannerSlides.length}</span>
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-               <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] hover:bg-white/10 transition-all group cursor-pointer" onClick={() => nextTrip && navigate(`/trips/${nextTrip.id}`)}>
-                  <div className="flex justify-between items-start mb-4">
-                     <div className="p-3 bg-blue-600/20 rounded-xl text-blue-400 group-hover:scale-110 transition-transform"><Calendar className="w-6 h-6" /></div>
-                     <span className="text-[10px] font-black text-blue-400">NEXT TRIP</span>
-                  </div>
-                  <p className="text-2xl font-black mb-1 line-clamp-1">{nextTrip?.name || 'N/A'}</p>
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Planning Ready</p>
-               </div>
-               <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[2rem] hover:bg-white/10 transition-all group">
-                  <div className="flex justify-between items-start mb-4">
-                     <div className="p-3 bg-purple-600/20 rounded-xl text-purple-400 group-hover:scale-110 transition-transform"><TrendingUp className="w-6 h-6" /></div>
-                     <span className="text-[10px] font-black text-purple-400">HEALTH</span>
-                  </div>
-                  <p className="text-2xl font-black mb-1">85%</p>
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Efficiency</p>
-               </div>
-               <div className="col-span-2 bg-gradient-to-r from-blue-600/20 to-transparent border border-blue-500/20 p-6 rounded-[2rem] flex items-center justify-between">
-                  <div>
-                     <p className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">AI INSIGHT</p>
-                     <p className="font-bold text-gray-300 italic">"Save up to 12% by booking your next stay on a weekday."</p>
-                  </div>
-                  <button className="p-4 bg-blue-600 rounded-2xl text-white hover:scale-110 transition-all shadow-xl shadow-blue-500/50"><ChevronRight className="w-6 h-6" /></button>
-               </div>
-            </div>
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
+              {bannerSlides[currentSlide].caption}
+            </h1>
+            <p className="text-gray-350 text-xs md:text-sm font-medium tracking-wide">
+              Currently viewing: <span className="text-purple-300 font-bold">{bannerSlides[currentSlide].title}</span>
+            </p>
           </div>
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px]"></div>
+
+          {/* Floating AI Reminders in Glass Panel within Banner */}
+          {data?.aiReminders?.length > 0 && (
+            <div className="hidden lg:block w-80 bg-white/10 backdrop-blur-md border border-white/10 p-5 rounded-2xl shadow-2xl">
+              <div className="flex items-center gap-1.5 mb-2.5 text-[9px] font-black uppercase tracking-wider text-purple-300">
+                <Zap className="w-4 h-4 text-amber-300 fill-amber-300 animate-pulse" />
+                <span>AI Co-Pilot Suggestion</span>
+              </div>
+              <p className="text-xs font-bold leading-relaxed text-gray-200">
+                "{data.aiReminders[0].message}"
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <StatCard icon={MapPin} label="Total Trips" value={data?.userStats?.totalTrips || 0} color="blue" />
-          <StatCard icon={Calendar} label="Destinations" value={data?.userStats?.countriesPlanned || 0} color="purple" />
-          <StatCard icon={CheckCircle2} label="Packed Items" value={`${data?.userStats?.itemsPacked || 0}/${data?.userStats?.totalItems || 0}`} color="emerald" />
-          <StatCard icon={TrendingUp} label="Memory Score" value="A+" color="amber" />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-10">
-            {nextTrip && (
-              <motion.div 
-                whileHover={{ scale: 1.01 }}
-                className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-blue-50 border border-gray-50 flex flex-col md:flex-row items-center gap-10 overflow-hidden relative"
-              >
-                <div className="flex-1 relative z-10">
-                  <div className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-widest mb-2">
-                    <Zap className="w-4 h-4" />
-                    <span>ADVENTURE COUNTDOWN</span>
-                  </div>
-                  <h3 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">{nextTrip.name}</h3>
-                  <p className="text-gray-500 font-bold flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-300" />
-                    Departure: {new Date(nextTrip.startDate).toLocaleDateString()}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-4 relative z-10">
-                  {timeLeft === 'ARRIVED' ? (
-                    <div className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black animate-bounce shadow-xl">
-                      LAUNCH TIME! 🚀
-                    </div>
-                  ) : timeLeft && (
-                    <div className="flex gap-2">
-                      <CountdownBlock value={timeLeft.days} label="DAYS" />
-                      <CountdownBlock value={timeLeft.hours} label="HRS" />
-                      <CountdownBlock value={timeLeft.minutes} label="MIN" />
-                      <CountdownBlock value={timeLeft.seconds} label="SEC" color="blue" />
-                    </div>
-                  )}
-                </div>
-                <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-blue-50/30 -skew-x-12 translate-x-20"></div>
-              </motion.div>
-            )}
-
-            {/* Dream Manifestation Section */}
-            <section className="space-y-8">
-               <div className="flex justify-between items-end">
-                  <div>
-                     <div className="flex items-center gap-2 text-purple-600 font-black text-[10px] uppercase tracking-widest mb-1">
-                        <Sparkles className="w-4 h-4" />
-                        <span>MANIFEST YOUR DREAMS</span>
-                     </div>
-                     <h3 className="text-3xl font-black text-gray-900 tracking-tight">Travel Goals</h3>
-                  </div>
-                  <button 
-                    onClick={() => setShowAddGoal(true)}
-                    className="bg-purple-50 text-purple-600 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all flex items-center gap-2"
-                  >
-                     <Plus className="w-4 h-4" /> New Goal
-                  </button>
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {data?.manifestGoals?.map((goal: any) => (
-                    <motion.div 
-                      key={goal.id}
-                      whileHover={{ y: -5 }}
-                      className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 group relative overflow-hidden"
-                    >
-                       <div className="relative z-10">
-                          <div className="flex justify-between items-start mb-6">
-                             <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
-                                <Target className="w-6 h-6" />
-                             </div>
-                             <button 
-                               onClick={() => { setSelectedGoal(goal); setShowAddMoney(true); }}
-                               className="opacity-0 group-hover:opacity-100 bg-purple-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                             >
-                                ADD FUNDS
-                             </button>
-                          </div>
-                          <h4 className="text-xl font-black text-gray-900 mb-1">{goal.title}</h4>
-                          <div className="flex justify-between items-end mb-4">
-                             <p className="text-sm font-bold text-gray-400">
-                                {goal.currency} {goal.savedAmount.toLocaleString()} <span className="text-xs font-medium">/ {goal.targetAmount.toLocaleString()}</span>
-                             </p>
-                             <span className="text-xs font-black text-purple-600">{Math.round((goal.savedAmount/goal.targetAmount)*100)}%</span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                             <motion.div 
-                               initial={{ width: 0 }}
-                               animate={{ width: `${Math.min(100, (goal.savedAmount/goal.targetAmount)*100)}%` }}
-                               className={`h-full ${goal.isCompleted ? 'bg-emerald-500' : 'bg-purple-600'} rounded-full`}
-                             />
-                          </div>
-                          {goal.isCompleted && (
-                             <div className="mt-4 flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase tracking-widest">
-                                <CheckCircle2 className="w-4 h-4" />
-                                <span>GOAL REACHED! READY TO TRAVEL</span>
-                             </div>
-                          )}
-                       </div>
-                       <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-purple-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    </motion.div>
-                  ))}
-                  {(!data?.manifestGoals || data.manifestGoals.length === 0) && (
-                     <div className="col-span-2 text-center py-16 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200">
-                        <Sparkles className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                        <p className="text-gray-400 font-black">No manifestation goals yet. What's your dream destination?</p>
-                     </div>
-                  )}
-               </div>
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-3xl font-black text-gray-900 tracking-tight">Your Itineraries</h3>
-                <Link to="/trips" className="text-blue-600 font-black text-sm flex items-center gap-1 hover:gap-2 transition-all">VIEW ALL <ChevronRight className="w-4 h-4" /></Link>
-              </div>
-              <div className="grid grid-cols-1 gap-6">
-                {data?.upcomingTrips?.map((trip: any) => (
-                  <div key={trip.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-                      <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner">
-                          <MapPin className="w-8 h-8" />
-                        </div>
-                        <div>
-                          <h4 className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">{trip.name}</h4>
-                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">{trip.type || 'National'}</p>
-                        </div>
-                      </div>
-                      <Link to={`/trips/${trip.id}`} className="w-full md:w-auto px-6 py-4 bg-gray-50 text-gray-400 rounded-2xl font-black text-xs hover:bg-blue-600 hover:text-white transition-all shadow-sm text-center">
-                        MANAGE PLAN
-                      </Link>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-black text-gray-400 tracking-widest">
-                        <span>PLANNING PROGRESS</span>
-                        <span className="text-blue-600">{trip.stops?.length > 0 ? '70%' : '10%'}</span>
-                      </div>
-                      <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600 rounded-full" style={{ width: trip.stops?.length > 0 ? '70%' : '10%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <div className="space-y-10">
-            {/* AI Smart Reminders */}
-            {data?.aiReminders?.length > 0 && (
-              <section className="bg-blue-600 rounded-[3rem] p-8 text-white shadow-2xl relative overflow-hidden">
-                 <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-6">
-                      <Zap className="w-5 h-5 text-amber-400" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-200">AI SMART REMINDER</span>
-                    </div>
-                    {data.aiReminders.map((r: any) => (
-                      <div key={r.id} className="mb-6 last:mb-0">
-                         <p className="text-xl font-black mb-2">{r.title}</p>
-                         <p className="text-blue-100 text-sm font-medium leading-relaxed">{r.message}</p>
-                      </div>
-                    ))}
-                 </div>
-                 <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-              </section>
-            )}
-
-            <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-gray-50">
-              <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <QuickAction icon={Plus} label="New Trip" to="/create-trip" color="blue" />
-                <QuickAction icon={Star} label="Saved" to="/explore" color="amber" />
-                <QuickAction icon={Briefcase} label="Packing" to="/trips" color="emerald" />
-                <QuickAction icon={AlertCircle} label="Help" to="#" color="purple" />
-              </div>
-            </section>
-
-            <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-gray-50">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                  <Activity className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl font-black text-gray-900 tracking-tight">Notifications</h3>
-              </div>
-              <div className="space-y-8">
-                {data?.notifications?.length > 0 ? data.notifications.map((notif: any) => (
-                  <div key={notif.id} className="flex gap-4 relative">
-                    <div className="mt-1.5 z-10">
-                      <div className={`w-2.5 h-2.5 rounded-full ${notif.type === 'alert' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.4)]'}`}></div>
-                    </div>
-                    <div className="pb-2 border-b border-gray-50 w-full">
-                      <p className="text-sm font-bold text-gray-800 leading-snug">{notif.title}</p>
-                      <p className="text-xs text-gray-500 mt-1">{notif.message}</p>
-                      <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">
-                        {new Date(notif.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-6">
-                    <p className="text-gray-400 text-sm font-bold italic">No new notifications.</p>
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
+        {/* Carousel Slide Indicators Dots */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2.5 z-20">
+          {bannerSlides.map((_, idx) => (
+            <button 
+              key={idx}
+              onClick={() => setCurrentSlide(idx)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${currentSlide === idx ? 'bg-purple-500 w-6' : 'bg-white/40 hover:bg-white/70'}`}
+            />
+          ))}
         </div>
       </div>
 
-      <AnimatePresence>
-         {showAddGoal && (
-           <Modal title="Create Manifestation Goal" onClose={() => setShowAddGoal(false)} onSubmit={handleCreateGoal} loading={submitting}>
-              <div className="space-y-6">
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dream Destination / Goal</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Europe 2027 Summer"
-                      className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-black text-xl"
-                      value={goalTitle}
-                      onChange={(e) => setGoalTitle(e.target.value)}
-                    />
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Target Amount (INR)</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 500000"
-                      className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-black text-xl"
-                      value={goalAmount}
-                      onChange={(e) => setGoalAmount(e.target.value)}
-                    />
-                 </div>
-              </div>
-           </Modal>
-         )}
+      {/* Control Actions (Search & Filtering System exactly like the wireframe) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-white p-4.5 rounded-[2rem] border border-gray-100 shadow-sm">
+        {/* Search Bar (Taking 7 columns on desktop) */}
+        <div className="relative md:col-span-7 w-full">
+          <Search className="absolute left-4.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Search bar ......"
+            className="w-full pl-12 pr-4 py-3 bg-gray-55/60 border-none rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-200 text-gray-700 placeholder:text-gray-400 transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
 
-         {showAddMoney && (
-           <Modal title={`Add Funds: ${selectedGoal?.title}`} onClose={() => setShowAddMoney(false)} onSubmit={handleAddMoney} loading={submitting}>
-              <div className="space-y-6 text-center">
-                 <div className="w-20 h-20 bg-purple-50 rounded-3xl flex items-center justify-center text-purple-600 mx-auto mb-4">
-                    <Wallet className="w-10 h-10" />
-                 </div>
-                 <div className="space-y-2 text-left">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Contribution Amount</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 5000"
-                      className="w-full px-8 py-5 rounded-2xl bg-gray-50 border-none font-black text-3xl text-center"
-                      value={addAmount}
-                      onChange={(e) => setAddAmount(e.target.value)}
-                      autoFocus
-                    />
-                 </div>
-                 <p className="text-gray-400 text-xs font-medium italic">"Manifesting your dreams, one coin at a time."</p>
+        {/* Wireframe Buttons: Group by, Filter, Sort by... (Taking 5 columns on desktop) */}
+        <div className="md:col-span-5 flex items-center justify-end gap-2 w-full">
+          {/* Group by (manifest savings goals drawer toggle) */}
+          <button 
+            onClick={() => setShowGoalsDrawer(true)}
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+          >
+            <span>Group by</span>
+            {data?.manifestGoals?.length > 0 && (
+              <span className="ml-1 w-4 h-4 bg-purple-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold">
+                {data.manifestGoals.length}
+              </span>
+            )}
+          </button>
+
+          {/* Filter */}
+          <button 
+            onClick={() => setFilterType(prev => prev === 'All' ? 'International' : prev === 'International' ? 'National' : 'All')}
+            className={`flex-1 md:flex-none flex items-center justify-center gap-1 px-4 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+              filterType !== 'All' 
+                ? 'bg-purple-600 border-purple-600 text-white' 
+                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <span>Filter</span>
+            {filterType !== 'All' && <span className="ml-1 text-[10px] opacity-90 font-bold">({filterType})</span>}
+          </button>
+
+          {/* Sort by... */}
+          <button 
+            onClick={() => setSortBy(prev => prev === 'date' ? 'name' : prev === 'name' ? 'progress' : 'date')}
+            className="flex-1 md:flex-none flex items-center justify-center gap-1 px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+          >
+            <span className="capitalize">Sort by... ({sortBy})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* SECTION 1: Top Regional Selections */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+            Top Regional Selections
+          </h2>
+          <div className="w-full h-px bg-gray-200/80" />
+        </div>
+
+        {/* Curated Square Cards Row with precise horizontal alignments */}
+        <div className="flex gap-5 overflow-x-auto pb-4 curated-scrollbar select-none">
+          {curatedRegions.map((region, index) => (
+            <motion.div
+              key={index}
+              whileHover={{ y: -4 }}
+              className="flex-shrink-0 w-[160px] h-[160px] rounded-[2rem] overflow-hidden relative border border-gray-100 shadow-md cursor-pointer group"
+            >
+              <img 
+                src={region.img} 
+                alt={region.name} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 text-white">
+                <p className="text-[12px] font-black tracking-wide leading-tight">{region.name}</p>
+                <p className="text-[8px] text-purple-300 font-bold uppercase tracking-wider mt-1">{region.count}</p>
               </div>
-           </Modal>
-         )}
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* SECTION 2: Previous Trips */}
+      <section className="space-y-6 relative">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+            Previous Trips
+          </h2>
+          <div className="w-full h-px bg-gray-200/80" />
+        </div>
+
+        {/* Tall Vertical Itinerary Cards Grid exactly matching wireframe cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6.5">
+          {filteredTrips.map((trip: any) => {
+            const hasStops = trip.stops?.length > 0;
+            return (
+              <motion.div 
+                key={trip.id}
+                whileHover={{ y: -6 }}
+                className="bg-white rounded-[2rem] border border-gray-100 shadow-xl overflow-hidden group hover:shadow-2xl transition-all duration-300 flex flex-col justify-between min-h-[410px]"
+              >
+                {/* Cover Image Block */}
+                <div className="relative h-48 overflow-hidden">
+                  <img 
+                    src={trip.coverPhotoUrl || `https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=400&q=80`}
+                    alt={trip.name} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                  
+                  <div className="absolute bottom-5.5 left-5.5 right-5.5 text-white">
+                    <span className="px-2.5 py-1 bg-purple-600 text-white rounded-md text-[8px] font-black uppercase tracking-wider">
+                      {trip.type || 'National'}
+                    </span>
+                    <h3 className="text-base font-extrabold tracking-tight mt-2.5 line-clamp-1 group-hover:text-purple-300 transition-colors">
+                      {trip.name}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Body details */}
+                <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
+                  <div className="space-y-2.5">
+                    <p className="text-xs text-gray-500 font-bold flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-purple-400" />
+                      {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-gray-500 font-bold flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-purple-400" />
+                      {trip.stops?.length || 0} locations planned
+                    </p>
+                  </div>
+
+                  {/* Planning Milestone Slider */}
+                  <div className="space-y-1.5 pt-2.5 border-t border-gray-50">
+                    <div className="flex justify-between text-[9px] font-black text-gray-400 tracking-wider uppercase">
+                      <span>Planning Progress</span>
+                      <span className="text-purple-600">{hasStops ? '70%' : '10%'}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-purple-600 rounded-full" style={{ width: hasStops ? '70%' : '10%' }} />
+                    </div>
+                  </div>
+
+                  {/* Manage Button */}
+                  <button 
+                    onClick={() => navigate(`/trips/${trip.id}`)}
+                    className="w-full py-3.5 bg-gray-50 hover:bg-purple-600 text-gray-500 hover:text-white rounded-xl font-bold text-xs uppercase tracking-wider border border-gray-100 transition-all cursor-pointer text-center"
+                  >
+                    Manage Plan
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
+
+          {filteredTrips.length === 0 && (
+            <div className="col-span-full text-center py-20 bg-gray-50/50 rounded-[2.5rem] border border-dashed border-gray-200">
+              <Compass className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 font-bold text-sm">No itineraries found matching your criteria.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Floating Plan a Trip Action Button (Bottom Right) */}
+        <div className="flex justify-end pt-5">
+          <button 
+            onClick={() => navigate('/create-trip')}
+            className="px-7 py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-full font-black text-xs uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 shadow-xl shadow-purple-500/20 active:scale-95"
+          >
+            <Plus className="w-4.5 h-4.5 stroke-[3px]" />
+            <span>Plan a trip</span>
+          </button>
+        </div>
+      </section>
+
+      {/* Savings Goals Drawer Panel */}
+      <AnimatePresence>
+        {showGoalsDrawer && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex justify-end bg-black/45 backdrop-blur-sm"
+          >
+            <div className="absolute inset-0 cursor-pointer" onClick={() => setShowGoalsDrawer(false)} />
+
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md h-full bg-white shadow-2xl p-6 flex flex-col justify-between border-l border-gray-100 z-10"
+            >
+              <div className="space-y-6 flex-1 overflow-y-auto pr-2">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-5 h-5 text-purple-600" />
+                    <h3 className="text-md font-extrabold text-gray-800">Financial Savings Goals</h3>
+                  </div>
+                  <button onClick={() => setShowGoalsDrawer(false)} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-700">
+                    <Plus className="w-6 h-6 rotate-45" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {data?.manifestGoals?.map((goal: any) => (
+                    <div 
+                      key={goal.id} 
+                      className="bg-gray-55/40 p-4.5 rounded-2xl border border-gray-100 space-y-3 group"
+                    >
+                      <div className="flex justify-between items-start">
+                        <span className="font-bold text-gray-800 text-sm leading-tight">{goal.title}</span>
+                        <button 
+                          onClick={() => { setSelectedGoal(goal); setShowAddMoney(true); }}
+                          className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                        >
+                          Contribute
+                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] text-gray-400 font-bold">
+                          <span>{goal.currency} {goal.savedAmount.toLocaleString()} saved</span>
+                          <span>{Math.round((goal.savedAmount/goal.targetAmount)*100)}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-gray-150 rounded-full overflow-hidden">
+                          <div className="h-full bg-purple-600 rounded-full" style={{ width: `${Math.min(100, (goal.savedAmount/goal.targetAmount)*100)}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {(!data?.manifestGoals || data.manifestGoals.length === 0) && (
+                    <div className="text-center py-12">
+                      <p className="text-gray-400 font-semibold text-xs">No active savings targets.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100">
+                <button 
+                  onClick={() => { setShowGoalsDrawer(false); setShowAddGoal(true); }}
+                  className="w-full py-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4.5 h-4.5" />
+                  <span>Create New Target</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
-    </>
+
+      {/* Add Manifest Goal Dialog */}
+      <AnimatePresence>
+        {showAddGoal && (
+          <Modal title="Create Financial Manifestation" onClose={() => setShowAddGoal(false)} onSubmit={handleCreateGoal} loading={submitting}>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Dream Goal Name</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Kyoto Cherry Blossom 2027"
+                  className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 font-bold text-base focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  value={goalTitle}
+                  onChange={(e) => setGoalTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Goal Cost Target (INR)</label>
+                <input 
+                  type="number" 
+                  placeholder="e.g. 150000"
+                  className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 font-bold text-base focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  value={goalAmount}
+                  onChange={(e) => setGoalAmount(e.target.value)}
+                />
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Add Funds Dialog */}
+        {showAddMoney && (
+          <Modal title={`Contribute: ${selectedGoal?.title}`} onClose={() => setShowAddMoney(false)} onSubmit={handleAddMoney} loading={submitting}>
+            <div className="space-y-6 text-center">
+              <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mx-auto">
+                <Wallet className="w-8 h-8" />
+              </div>
+              <div className="space-y-2 text-left">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Fund Contribution</label>
+                <input 
+                  type="number" 
+                  placeholder="e.g. 10000"
+                  className="w-full px-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 font-bold text-base text-center focus:outline-none focus:ring-2 focus:ring-purple-200"
+                  value={addAmount}
+                  onChange={(e) => setAddAmount(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <p className="text-gray-400 text-xs font-medium italic">"Every single step brings your destination closer."</p>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -422,83 +570,47 @@ const Modal = ({ title, children, onClose, onSubmit, loading }: any) => (
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-md"
+    className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md"
   >
     <motion.div 
-      initial={{ scale: 0.9, y: 20 }}
+      initial={{ scale: 0.95, y: 15 }}
       animate={{ scale: 1, y: 0 }}
-      className="bg-white rounded-[3.5rem] w-full max-w-xl overflow-hidden shadow-2xl"
+      className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100"
     >
-      <div className="p-10 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
-        <h2 className="text-3xl font-black text-gray-900 tracking-tight">{title}</h2>
-        <button onClick={onClose} className="p-4 hover:bg-gray-200 rounded-2xl transition-all">
-          <Plus className="w-6 h-6 rotate-45" />
+      <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+        <h2 className="text-xs font-black text-gray-900 uppercase tracking-wider">{title}</h2>
+        <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-2xl transition-all cursor-pointer">
+          <Plus className="w-6 h-6 rotate-45 text-gray-400" />
         </button>
       </div>
-      <div className="p-10">
+      <div className="p-8">
         {children}
         <button 
           onClick={onSubmit}
           disabled={loading}
-          className="w-full mt-10 bg-gray-900 hover:bg-black text-white py-6 rounded-[2rem] font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl disabled:opacity-50"
+          className="w-full mt-8 bg-purple-600 hover:bg-purple-500 text-white py-5 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer disabled:opacity-50"
         >
-          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'CONFIRM MANIFESTATION'}
+          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Confirm Goal Entry'}
         </button>
       </div>
     </motion.div>
   </motion.div>
 );
 
-const StatCard = ({ icon: Icon, label, value, color }: any) => {
-  const colors: any = {
-    blue: 'bg-blue-600 shadow-blue-100',
-    green: 'bg-green-600 shadow-green-100',
-    purple: 'bg-purple-600 shadow-purple-100',
-    emerald: 'bg-emerald-600 shadow-emerald-100',
-    amber: 'bg-amber-600 shadow-amber-100'
-  };
-  return (
-    <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col items-center text-center group hover:shadow-xl transition-all">
-      <div className={`p-4 rounded-2xl mb-4 text-white shadow-2xl ${colors[color]} group-hover:scale-110 transition-transform`}>
-        <Icon className="w-8 h-8" />
-      </div>
-      <p className="text-3xl font-black text-gray-900 tracking-tight">{value}</p>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-2">{label}</p>
-    </div>
-  );
-};
-
-const QuickAction = ({ icon: Icon, label, to, color }: any) => {
-  const colors: any = {
-    blue: 'text-blue-600 bg-blue-50 hover:bg-blue-600',
-    amber: 'text-amber-600 bg-amber-50 hover:bg-amber-600',
-    emerald: 'text-emerald-600 bg-emerald-50 hover:bg-emerald-600',
-    purple: 'text-purple-600 bg-purple-50 hover:bg-purple-600',
-  };
-  return (
-    <Link to={to} className={`flex flex-col items-center justify-center p-6 rounded-[2rem] transition-all group border border-transparent hover:shadow-xl active:scale-95 ${colors[color]}`}>
-      <Icon className="w-8 h-8 mb-3 group-hover:text-white transition-colors" />
-      <span className="text-[10px] font-black group-hover:text-white uppercase tracking-widest transition-colors">{label}</span>
-    </Link>
-  );
-};
-
-const CountdownBlock = ({ value, label, color }: any) => (
-  <div className="flex flex-col items-center">
-    <div className={`w-14 h-16 ${color === 'blue' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-2xl flex items-center justify-center text-2xl font-black shadow-sm`}>
-      {String(value).padStart(2, '0')}
-    </div>
-    <span className="text-[8px] font-black text-gray-400 mt-2 tracking-widest">{label}</span>
-  </div>
+const Compass = ({ className }: { className: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+  </svg>
 );
 
 const DashboardSkeleton = () => (
   <div className="space-y-12 animate-pulse p-4">
     <div className="h-80 bg-gray-100 rounded-[3rem]"></div>
-    <div className="grid grid-cols-4 gap-8">
+    <div className="grid grid-cols-4 gap-6">
       {[1,2,3,4].map(i => <div key={i} className="h-40 bg-gray-100 rounded-[2.5rem]"></div>)}
     </div>
-    <div className="grid grid-cols-3 gap-10">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
       <div className="col-span-2 h-[600px] bg-gray-100 rounded-[3rem]"></div>
       <div className="h-[600px] bg-gray-100 rounded-[3rem]"></div>
     </div>

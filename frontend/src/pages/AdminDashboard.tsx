@@ -33,14 +33,14 @@ const AdminDashboard = () => {
     fetchAdminData();
   }, []);
 
-  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="w-12 h-12 text-blue-600 animate-spin" /></div>;
+  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="w-12 h-12 text-purple-600 animate-spin" /></div>;
   
   if (error) return (
     <div className="h-[70vh] flex flex-col items-center justify-center text-center space-y-6">
        <div className="w-24 h-24 bg-red-50 rounded-[2.5rem] flex items-center justify-center text-red-500 shadow-2xl shadow-red-100">
           <ShieldAlert className="w-12 h-12" />
        </div>
-       <h2 className="text-4xl font-black text-gray-900 tracking-tight">Access Denied</h2>
+       <h2 className="text-base font-black text-gray-900 tracking-tight">Access Denied</h2>
        <p className="text-gray-500 font-bold max-w-sm">This area is reserved for Traveloop administrators only. If you believe this is an error, please contact support.</p>
        <button onClick={() => navigate('/dashboard')} className="px-10 py-4 bg-gray-900 text-white rounded-2xl font-black shadow-xl hover:scale-105 transition-all">RETURN TO DASHBOARD</button>
     </div>
@@ -57,12 +57,12 @@ const AdminDashboard = () => {
     <div className="space-y-10 pb-20 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h1 className="text-5xl font-black text-gray-900 tracking-tight">Admin Console</h1>
-           <p className="text-gray-500 font-bold mt-1 text-lg">Centralized platform intelligence and user control hub.</p>
+           <h1 className="text-base font-black text-gray-900 tracking-tight">Admin Console</h1>
+           <p className="text-gray-500 font-bold mt-1 text-base">Centralized platform intelligence and user control hub.</p>
         </div>
         <div className="flex gap-3">
            <button className="px-6 py-3 bg-white border border-gray-100 rounded-xl font-black text-xs text-gray-500 hover:bg-gray-50 transition-all">EXPORT CSV</button>
-           <button className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all">REFRESH STATS</button>
+           <button className="px-6 py-3 bg-purple-600 text-white rounded-xl font-black text-xs shadow-lg shadow-purple-100 hover:bg-purple-700 transition-all">REFRESH STATS</button>
         </div>
       </div>
 
@@ -73,10 +73,10 @@ const AdminDashboard = () => {
             <motion.div 
               key={idx}
               whileHover={{ y: -5 }}
-              className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-blue-50/20"
+              className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-purple-50/20"
             >
               <div className="flex justify-between items-start mb-6">
-                 <div className={`p-4 rounded-2xl ${stat.color === 'blue' ? 'bg-blue-50 text-blue-600' : stat.color === 'green' ? 'bg-green-50 text-green-600' : stat.color === 'purple' ? 'bg-purple-50 text-purple-600' : 'bg-amber-50 text-amber-600'}`}>
+                 <div className={`p-4 rounded-2xl ${stat.color === 'blue' ? 'bg-purple-50 text-purple-600' : stat.color === 'green' ? 'bg-green-50 text-green-600' : stat.color === 'purple' ? 'bg-purple-50 text-purple-600' : 'bg-amber-50 text-amber-600'}`}>
                     <Icon className="w-6 h-6" />
                  </div>
                  <span className="flex items-center gap-1 text-green-500 font-black text-xs bg-green-50 px-3 py-1 rounded-full">
@@ -84,16 +84,16 @@ const AdminDashboard = () => {
                  </span>
               </div>
               <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest">{stat.label}</h4>
-              <p className="text-4xl font-black text-gray-900 mt-2">{stat.value?.toLocaleString()}</p>
+              <p className="text-base font-black text-gray-900 mt-2">{stat.value?.toLocaleString()}</p>
             </motion.div>
           );
         })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <div className="lg:col-span-2 bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-2xl shadow-blue-50/40">
+        <div className="lg:col-span-2 bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-2xl shadow-purple-50/40">
            <div className="flex justify-between items-center mb-10">
-              <h3 className="text-2xl font-black text-gray-900 tracking-tight">User Acquisition Trend</h3>
+              <h3 className="text-base font-black text-gray-900 tracking-tight">User Acquisition Trend</h3>
               <select className="bg-gray-50 border-none rounded-xl text-xs font-black px-4 py-2">
                  <option>Last 7 Days</option>
                  <option>Last 30 Days</option>
@@ -105,9 +105,9 @@ const AdminDashboard = () => {
                   <XAxis dataKey="cityName" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'black', fill: '#94a3b8' }} />
                   <YAxis hide />
                   <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-                  <Bar dataKey="_count.id" fill="#3b82f6" radius={[10, 10, 0, 0]}>
+                  <Bar dataKey="_count.id" fill="#a855f7" radius={[10, 10, 0, 0]}>
                      {data?.popularCities.map((entry: any, index: number) => (
-                       <Cell key={`cell-${index}`} fill={index === 0 ? '#1d4ed8' : '#3b82f6'} />
+                       <Cell key={`cell-${index}`} fill={index === 0 ? '#1d4ed8' : '#a855f7'} />
                      ))}
                   </Bar>
                 </BarChart>
@@ -116,11 +116,11 @@ const AdminDashboard = () => {
            <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mt-6">Top destinations by trip volume</p>
         </div>
 
-        <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-2xl shadow-blue-50/40">
-           <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Recent Activity</h3>
+        <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-2xl shadow-purple-50/40">
+           <h3 className="text-base font-black text-gray-900 mb-8 tracking-tight">Recent Activity</h3>
            <div className="space-y-6">
               {data?.recentUsers.map((item: any, idx: number) => (
-                <div key={idx} className="flex items-center gap-4 p-4 hover:bg-blue-50 rounded-2xl transition-all group">
+                <div key={idx} className="flex items-center gap-4 p-4 hover:bg-purple-50 rounded-2xl transition-all group">
                    <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-black shadow-sm group-hover:scale-110 transition-transform">
                       {item.name[0]}
                    </div>
@@ -136,18 +136,18 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-[3.5rem] border border-gray-100 shadow-2xl shadow-blue-50/40 overflow-hidden">
+      <div className="bg-white rounded-[3.5rem] border border-gray-100 shadow-2xl shadow-purple-50/40 overflow-hidden">
          <div className="p-10 border-b border-gray-50 flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-               <h3 className="text-3xl font-black text-gray-900 tracking-tight">User Management</h3>
+               <h3 className="text-base font-black text-gray-900 tracking-tight">User Management</h3>
                <p className="text-gray-400 font-bold text-sm">Review, verify, and manage platform participants.</p>
             </div>
             <div className="flex gap-3">
                <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input type="text" placeholder="Filter by name..." className="pl-12 pr-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-blue-100 text-sm font-black" />
+                  <input type="text" placeholder="Filter by name..." className="pl-12 pr-6 py-4 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 text-sm font-black" />
                </div>
-               <button className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+               <button className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:bg-purple-600 hover:text-white transition-all shadow-sm">
                   <Filter className="w-5 h-5" />
                </button>
             </div>
@@ -164,14 +164,14 @@ const AdminDashboard = () => {
                </thead>
                <tbody className="divide-y divide-gray-50">
                   {users.map((user: any, idx: number) => (
-                    <tr key={idx} className="hover:bg-blue-50/30 transition-colors group">
+                    <tr key={idx} className="hover:bg-purple-50/30 transition-colors group">
                        <td className="px-10 py-6">
                           <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-black shadow-inner">
+                             <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center font-black shadow-inner">
                                 {user.name[0]}
                              </div>
                              <div>
-                                <p className="font-black text-gray-900 text-lg">{user.name}</p>
+                                <p className="font-black text-gray-900 text-base">{user.name}</p>
                                 <p className="text-xs text-gray-400 font-bold">{user.email}</p>
                              </div>
                           </div>
@@ -183,12 +183,12 @@ const AdminDashboard = () => {
                        </td>
                        <td className="px-10 py-6">
                           <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
-                             <Calendar className="w-4 h-4 text-blue-300" />
+                             <Calendar className="w-4 h-4 text-purple-300" />
                              {new Date(user.createdAt).toLocaleDateString()}
                           </div>
                        </td>
                        <td className="px-10 py-6">
-                          <button className="bg-white border border-gray-100 text-blue-600 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm">MANAGE</button>
+                          <button className="bg-white border border-gray-100 text-purple-600 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all shadow-sm">MANAGE</button>
                        </td>
                     </tr>
                   ))}

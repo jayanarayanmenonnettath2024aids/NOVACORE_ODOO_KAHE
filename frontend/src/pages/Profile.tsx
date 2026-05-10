@@ -70,7 +70,7 @@ const Profile = () => {
     }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="w-12 h-12 text-blue-600 animate-spin" /></div>;
+  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="w-12 h-12 text-purple-600 animate-spin" /></div>;
 
   const menuItems = [
     { id: 'profile', label: 'Public Profile', icon: User },
@@ -92,7 +92,7 @@ const Profile = () => {
                 onClick={() => setActiveSection(item.id)}
                 className={`w-full flex items-center gap-4 px-8 py-5 rounded-[2rem] font-black transition-all ${
                   activeSection === item.id 
-                    ? 'bg-blue-600 text-white shadow-2xl shadow-blue-200 scale-[1.02]' 
+                    ? 'bg-purple-600 text-white shadow-2xl shadow-purple-200 scale-[1.02]' 
                     : 'text-gray-400 hover:bg-white hover:text-gray-900 border border-transparent hover:border-gray-100'
                 }`}
               >
@@ -103,29 +103,29 @@ const Profile = () => {
           })}
         </aside>
 
-        <main className="flex-1 bg-white p-12 rounded-[4rem] border border-gray-100 shadow-xl shadow-blue-50/50">
+        <main className="flex-1 bg-white p-12 rounded-[4rem] border border-gray-100 shadow-xl shadow-purple-50/50">
           {activeSection === 'profile' && (
             <div className="space-y-12">
               <div className="flex flex-col md:flex-row items-center gap-10 pb-12 border-b border-gray-50">
                  <div className="relative group">
-                    <div className="w-40 h-40 rounded-[3rem] bg-blue-50 flex items-center justify-center border-8 border-white shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                    <div className="w-40 h-40 rounded-[3rem] bg-purple-50 flex items-center justify-center border-8 border-white shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
                        {formData.photoUrl ? (
                          <img src={formData.photoUrl} className="w-full h-full object-cover" />
                        ) : (
-                         <User className="w-20 h-20 text-blue-600" />
+                         <User className="w-20 h-20 text-purple-600" />
                        )}
                     </div>
-                    <button className="absolute bottom-2 right-2 p-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:scale-110 transition-all border-4 border-white">
+                    <button className="absolute bottom-2 right-2 p-3 bg-purple-600 text-white rounded-2xl shadow-xl hover:scale-110 transition-all border-4 border-white">
                        <Camera className="w-5 h-5" />
                     </button>
                  </div>
                  <div className="text-center md:text-left space-y-2">
-                    <h2 className="text-5xl font-black text-gray-900 tracking-tight">{user.name}</h2>
-                    <p className="text-gray-400 font-bold flex items-center justify-center md:justify-start gap-2 text-lg">
-                       <Mail className="w-5 h-5 text-blue-300" /> {user.email}
+                    <h2 className="text-base font-black text-gray-900 tracking-tight">{user.name}</h2>
+                    <p className="text-gray-400 font-bold flex items-center justify-center md:justify-start gap-2 text-base">
+                       <Mail className="w-5 h-5 text-purple-300" /> {user.email}
                     </p>
                     <div className="flex gap-3 mt-6">
-                       <span className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-100">PLATINUM TIER</span>
+                       <span className="px-4 py-1.5 bg-purple-50 text-purple-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-purple-100">PLATINUM TIER</span>
                        <span className="px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100">BETA TESTER</span>
                     </div>
                  </div>
@@ -138,7 +138,7 @@ const Profile = () => {
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="w-full px-8 py-5 rounded-3xl bg-gray-50 border-none focus:ring-4 focus:ring-blue-100 transition-all font-black text-lg"
+                      className="w-full px-8 py-5 rounded-3xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 transition-all font-black text-base"
                     />
                  </div>
                  <div className="space-y-3">
@@ -147,7 +147,7 @@ const Profile = () => {
                       value={formData.photoUrl}
                       placeholder="https://..."
                       onChange={(e) => setFormData({...formData, photoUrl: e.target.value})}
-                      className="w-full px-8 py-5 rounded-3xl bg-gray-50 border-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-gray-600"
+                      className="w-full px-8 py-5 rounded-3xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 transition-all font-bold text-gray-600"
                     />
                  </div>
                  <div className="space-y-3">
@@ -155,7 +155,7 @@ const Profile = () => {
                     <select 
                       value={formData.language}
                       onChange={(e) => setFormData({...formData, language: e.target.value})}
-                      className="w-full px-8 py-5 rounded-3xl bg-gray-50 border-none focus:ring-4 focus:ring-blue-100 transition-all font-black appearance-none"
+                      className="w-full px-8 py-5 rounded-3xl bg-gray-50 border-none focus:ring-4 focus:ring-purple-100 transition-all font-black appearance-none"
                     >
                        <option>English (US)</option>
                        <option>Spanish (ES)</option>
@@ -175,7 +175,7 @@ const Profile = () => {
                     </button>
                     <button 
                       disabled={saving}
-                      className="w-full md:w-auto bg-blue-600 text-white px-16 py-5 rounded-[2rem] font-black shadow-2xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-3"
+                      className="w-full md:w-auto bg-purple-600 text-white px-16 py-5 rounded-[2rem] font-black shadow-2xl shadow-purple-200 hover:bg-purple-700 active:scale-95 transition-all flex items-center justify-center gap-3"
                     >
                        {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-6 h-6" /> SAVE PROFILE</>}
                     </button>
@@ -187,27 +187,27 @@ const Profile = () => {
           {activeSection === 'saved' && (
             <div className="space-y-10">
                <div className="flex items-center justify-between">
-                  <h3 className="text-4xl font-black text-gray-900 tracking-tight">Saved Places</h3>
-                  <span className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black">{savedDests.length} SAVED</span>
+                  <h3 className="text-base font-black text-gray-900 tracking-tight">Saved Places</h3>
+                  <span className="bg-purple-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black">{savedDests.length} SAVED</span>
                </div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {savedDests.map((dest: any) => (
-                    <div key={dest.id} className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100 hover:border-blue-200 hover:shadow-xl transition-all group relative overflow-hidden">
+                    <div key={dest.id} className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100 hover:border-purple-200 hover:shadow-xl transition-all group relative overflow-hidden">
                        <div className="relative z-10">
-                          <h4 className="text-2xl font-black text-gray-900">{dest.cityName}</h4>
-                          <p className="text-blue-600 font-black text-xs uppercase tracking-widest mt-1">{dest.country}</p>
-                          <button className="mt-6 flex items-center gap-2 text-xs font-black text-gray-400 group-hover:text-blue-600 transition-colors">
+                          <h4 className="text-base font-black text-gray-900">{dest.cityName}</h4>
+                          <p className="text-purple-600 font-black text-xs uppercase tracking-widest mt-1">{dest.country}</p>
+                          <button className="mt-6 flex items-center gap-2 text-xs font-black text-gray-400 group-hover:text-purple-600 transition-colors">
                              <ExternalLink className="w-4 h-4" /> EXPLORE NOW
                           </button>
                        </div>
-                       <Heart className="absolute -bottom-6 -right-6 w-32 h-32 text-blue-100 opacity-20 group-hover:scale-110 transition-transform duration-700" />
+                       <Heart className="absolute -bottom-6 -right-6 w-32 h-32 text-purple-100 opacity-20 group-hover:scale-110 transition-transform duration-700" />
                     </div>
                   ))}
                   {savedDests.length === 0 && (
                     <div className="col-span-full py-20 text-center bg-gray-50 rounded-[3rem] border-4 border-dashed border-gray-100">
                        <Heart className="w-16 h-16 text-gray-200 mx-auto mb-6" />
-                       <p className="text-xl font-black text-gray-300 italic">No saved destinations yet.</p>
-                       <button onClick={() => navigate('/explore')} className="mt-6 text-blue-600 font-black text-sm hover:underline">Go explore cities</button>
+                       <p className="text-base font-black text-gray-300 italic">No saved destinations yet.</p>
+                       <button onClick={() => navigate('/explore')} className="mt-6 text-purple-600 font-black text-sm hover:underline">Go explore cities</button>
                     </div>
                   )}
                </div>
@@ -219,14 +219,14 @@ const Profile = () => {
                <div className="w-24 h-24 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto text-gray-300">
                   <Shield className="w-12 h-12" />
                </div>
-               <h3 className="text-3xl font-black text-gray-900 tracking-tight">Security & Privacy</h3>
+               <h3 className="text-base font-black text-gray-900 tracking-tight">Security & Privacy</h3>
                <p className="text-gray-500 max-w-sm mx-auto font-medium">Enhanced encryption and two-factor authentication are coming soon in the next major update.</p>
             </div>
           )}
 
           {activeSection === 'notifications' && (
             <div className="space-y-10">
-               <h3 className="text-3xl font-black text-gray-900 tracking-tight">Notifications</h3>
+               <h3 className="text-base font-black text-gray-900 tracking-tight">Notifications</h3>
                <div className="space-y-6">
                  {[
                    { label: 'Trip Reminders', desc: 'Alerts 24h before travel events.' },
@@ -235,10 +235,10 @@ const Profile = () => {
                  ].map((item, idx) => (
                    <div key={idx} className="flex items-center justify-between p-8 bg-gray-50 rounded-[2.5rem] border border-transparent hover:border-gray-100 transition-all">
                       <div>
-                         <p className="text-xl font-black text-gray-800">{item.label}</p>
+                         <p className="text-base font-black text-gray-800">{item.label}</p>
                          <p className="text-sm text-gray-500 font-bold mt-1">{item.desc}</p>
                       </div>
-                      <div className="w-14 h-8 bg-blue-600 rounded-full relative p-1.5 cursor-pointer shadow-lg shadow-blue-100">
+                      <div className="w-14 h-8 bg-purple-600 rounded-full relative p-1.5 cursor-pointer shadow-lg shadow-purple-100">
                          <div className="w-5 h-5 bg-white rounded-full ml-auto shadow-sm"></div>
                       </div>
                    </div>

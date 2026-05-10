@@ -71,19 +71,19 @@ const Explore = () => {
   return (
     <div className="space-y-10 pb-20">
       {/* Search Header */}
-      <div className="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 p-12 text-white shadow-2xl">
+      <div className="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-indigo-600 via-purple-600 to-sky-500 p-12 text-white shadow-2xl">
         <div className="relative z-10 max-w-2xl">
-          <h1 className="text-5xl font-black mb-4 tracking-tight leading-tight">Where to next?</h1>
-          <p className="text-blue-100 font-medium text-lg mb-10">Discover your next destination and add it directly to your itinerary.</p>
+          <h1 className="text-base font-black mb-4 tracking-tight leading-tight">Where to next?</h1>
+          <p className="text-purple-100 font-medium text-base mb-10">Discover your next destination and add it directly to your itinerary.</p>
           
           <div className="relative group">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-purple-600 transition-colors" />
             <input 
               type="text" 
               placeholder="Search cities, countries, or regions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-16 pr-6 py-6 rounded-3xl bg-white text-gray-900 border-none shadow-2xl focus:ring-4 focus:ring-blue-400/50 transition-all font-bold text-lg"
+              className="w-full pl-16 pr-6 py-6 rounded-3xl bg-white text-gray-900 border-none shadow-2xl focus:ring-4 focus:ring-purple-400/50 transition-all font-bold text-base"
             />
           </div>
         </div>
@@ -96,14 +96,14 @@ const Explore = () => {
       {/* Filters */}
       <div className="flex items-center gap-3 overflow-x-auto pb-4 no-scrollbar">
         <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2 mr-2">
-           <Filter className="w-5 h-5 text-blue-600" />
+           <Filter className="w-5 h-5 text-purple-600" />
            <span className="text-sm font-black text-gray-400 uppercase tracking-widest">Regions</span>
         </div>
         {regions.map(region => (
           <button 
             key={region}
             onClick={() => setSelectedRegion(region)}
-            className={`px-8 py-3 rounded-2xl font-black text-sm transition-all whitespace-nowrap ${selectedRegion === region ? 'bg-blue-600 text-white shadow-xl shadow-blue-100' : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-100'}`}
+            className={`px-8 py-3 rounded-2xl font-black text-sm transition-all whitespace-nowrap ${selectedRegion === region ? 'bg-purple-600 text-white shadow-xl shadow-purple-100' : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-100'}`}
           >
             {region}
           </button>
@@ -126,7 +126,7 @@ const Explore = () => {
               <div className="h-64 relative">
                 <img src={city.img} alt={city.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 <div className="absolute top-6 left-6 flex flex-col gap-2">
-                   <span className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black text-blue-600 shadow-sm flex items-center gap-2">
+                   <span className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black text-purple-600 shadow-sm flex items-center gap-2">
                       <TrendingUp className="w-3.5 h-3.5" /> {Math.floor(80 + Math.random() * 15)}% AI MATCH
                    </span>
                    <span className="bg-gray-900/80 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black text-white shadow-sm">
@@ -136,14 +136,14 @@ const Explore = () => {
                 <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
                    <div className="text-white">
                       <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{city.region}</p>
-                      <h4 className="text-3xl font-black">{city.name}</h4>
+                      <h4 className="text-base font-black">{city.name}</h4>
                    </div>
                 </div>
               </div>
               <div className="p-8">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h3 className="text-3xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">{city.name}</h3>
+                    <h3 className="text-base font-black text-gray-900 group-hover:text-purple-600 transition-colors">{city.name}</h3>
                     <p className="text-gray-400 font-bold flex items-center gap-1.5 mt-1">
                       <Globe className="w-4 h-4" /> {city.country}
                     </p>
@@ -154,7 +154,7 @@ const Explore = () => {
                 </div>
                 <button 
                   onClick={() => setShowAddModal(city.id)}
-                  className="w-full bg-blue-50 text-blue-600 py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-blue-600 hover:text-white transition-all group/btn"
+                  className="w-full bg-purple-50 text-purple-600 py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-purple-600 hover:text-white transition-all group/btn"
                 >
                   <Plus className="w-5 h-5 group-hover/btn:rotate-90 transition-transform" /> 
                   <span>Add to Trip</span>
@@ -177,7 +177,7 @@ const Explore = () => {
               className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md relative"
             >
               <button onClick={() => setShowAddModal(null)} className="absolute top-8 right-8 text-gray-400 hover:text-gray-900"><X className="w-6 h-6" /></button>
-              <h3 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">Select Trip</h3>
+              <h3 className="text-base font-black text-gray-900 mb-2 tracking-tight">Select Trip</h3>
               <p className="text-gray-500 font-medium mb-8">Which trip should we add this destination to?</p>
               
               <div className="space-y-3 max-h-80 overflow-y-auto no-scrollbar pr-2">
@@ -186,20 +186,20 @@ const Explore = () => {
                     key={trip.id}
                     disabled={loading}
                     onClick={() => handleAddToTrip(trip.id)}
-                    className="w-full flex items-center justify-between p-5 rounded-2xl bg-gray-50 hover:bg-blue-50 border-2 border-transparent hover:border-blue-200 transition-all group/trip text-left"
+                    className="w-full flex items-center justify-between p-5 rounded-2xl bg-gray-50 hover:bg-purple-50 border-2 border-transparent hover:border-purple-200 transition-all group/trip text-left"
                    >
                      <div>
                         <p className="font-black text-gray-800">{trip.name}</p>
                         <p className="text-xs font-bold text-gray-400">{new Date(trip.startDate).toLocaleDateString()}</p>
                      </div>
-                     <ChevronRight className="w-5 h-5 text-gray-300 group-hover/trip:text-blue-600 group-hover/trip:translate-x-1 transition-all" />
+                     <ChevronRight className="w-5 h-5 text-gray-300 group-hover/trip:text-purple-600 group-hover/trip:translate-x-1 transition-all" />
                    </button>
                  ))}
                  {trips.length === 0 && (
                    <div className="text-center py-10">
                       <Navigation className="w-12 h-12 text-gray-200 mx-auto mb-4" />
                       <p className="text-gray-500 font-bold">No active trips found.</p>
-                      <button onClick={() => navigate('/create-trip')} className="mt-4 text-blue-600 font-black text-sm">CREATE NEW TRIP</button>
+                      <button onClick={() => navigate('/create-trip')} className="mt-4 text-purple-600 font-black text-sm">CREATE NEW TRIP</button>
                    </div>
                  )}
               </div>

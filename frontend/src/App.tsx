@@ -9,7 +9,7 @@ import Explore from './pages/Explore';
 import PublicTrip from './pages/PublicTrip';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
-import Navbar from './components/Navbar';
+import { SimpleHeader } from '@/components/ui/simple-header';
 import IntroVideo from './pages/IntroVideo';
 import Landing from './pages/Landing';
 
@@ -38,8 +38,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <SimpleHeader />
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
