@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, MapPin, Star, Filter, ArrowRight, Plus, 
@@ -8,6 +9,7 @@ import {
 import api from '../api/axios';
 
 const Explore = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [trips, setTrips] = useState<any[]>([]);
@@ -128,7 +130,7 @@ const Explore = () => {
                       <TrendingUp className="w-3.5 h-3.5" /> {Math.floor(80 + Math.random() * 15)}% AI MATCH
                    </span>
                    <span className="bg-gray-900/80 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black text-white shadow-sm">
-                      {city.type}
+                      {city.popularity}
                    </span>
                 </div>
                 <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">

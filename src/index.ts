@@ -23,6 +23,7 @@ import checklistRoutes from './routes/checklistRoutes';
 import notesRoutes from './routes/notesRoutes';
 import searchRoutes from './routes/searchRoutes';
 import publicTripRoutes from './routes/publicTripRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 // Basic Health Check Route
 app.get('/api/health', (req, res) => {
@@ -48,6 +49,7 @@ app.use('/api/checklist', checklistRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/public/trips', publicTripRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

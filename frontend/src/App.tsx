@@ -85,7 +85,7 @@ function App() {
               } 
             />
             <Route path="/public/trips/:id" element={<PublicTrip />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
       </div>

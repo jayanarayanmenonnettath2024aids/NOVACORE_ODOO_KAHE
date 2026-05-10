@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, MapPin, DollarSign, Package, FileText, 
   ChevronLeft, Plus, Clock, Trash2, CheckCircle2, Circle,
-  PieChart as PieChartIcon, BarChart3, TrendingDown, AlertCircle,
-  Search, X, Save, Edit3, Loader2, Info, Globe, ChevronRight
+  BarChart3, TrendingDown, AlertCircle,
+  Search, X, Edit3, Loader2, Users2
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import api from '../api/axios';
-import { generateSmartAdvice, predictTotalCost, getPackingSuggestions } from '../utils/AIUtility';
+import { predictTotalCost, getPackingSuggestions } from '../utils/AIUtility';
 import { TrendingUp } from 'lucide-react';
 
 const TripDetails = () => {
@@ -68,13 +68,23 @@ const TripDetails = () => {
              </span>
           </div>
           <h1 className="text-5xl font-black mb-2 tracking-tight">{trip.name}</h1>
-          <div className="flex items-center gap-6 text-sm font-bold opacity-90">
+          <div className="flex flex-wrap items-center gap-4 text-sm font-bold opacity-90 mt-4">
             <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
               <Calendar className="w-4 h-4 text-blue-300" /> {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
             </span>
             <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
               <MapPin className="w-4 h-4 text-blue-300" /> {trip.stops?.length || 0} destinations
             </span>
+            {trip.companionType && (
+              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
+                <Users2 className="w-4 h-4 text-purple-300" /> {trip.companionType}
+              </span>
+            )}
+            {trip.mood && (
+              <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 capitalize">
+                <TrendingUp className="w-4 h-4 text-amber-300" /> {trip.mood}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -109,9 +119,9 @@ const TripDetails = () => {
           className="min-h-[500px]"
         >
           {activeTab === 'itinerary' && <ItineraryTab trip={trip} onUpdate={fetchTrip} />}
-          {activeTab === 'budget' && <BudgetTab trip={trip} onUpdate={fetchTrip} />}
+          {activeTab === 'budget' && <BudgetTab trip={trip} currency={trip.currency || 'USD'} onUpdate={fetchTrip} />}
           {activeTab === 'packing' && <PackingTab trip={trip} onUpdate={fetchTrip} />}
-          {activeTab === 'notes' && <NotesTab trip={trip} onUpdate={fetchTrip} />}
+          {activeTab === 'notes' && <JournalTab trip={trip} onUpdate={fetchTrip} />}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -544,12 +554,135 @@ const PackingTab = ({ trip, onUpdate }: any) => {
   );
 };
 
-const NotesTab = ({ trip }: any) => {
-  const [notes, setNotes] = useState([{ id: 1, title: 'Hotel Reservation', content: 'Confirmation #123456. Remember to ask for a high floor.', date: '2024-05-10' },{ id: 2, title: 'Local SIM Card', content: 'Available at Narita terminal 2. Pocket wifi might be better.', date: '2024-05-11' }]);
+const JournalTab = ({ trip, onUpdate }: any) => {
+  const [showAdd, setShowAdd] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [editNote, setEditNote] = useState<any>(null);
+
+  const notes = trip.notes || [];
+
+  const handleDelete = async (noteId: string) => {
+    if (window.confirm('Delete this journal entry?')) {
+      try {
+        await api.delete(`/notes/${noteId}`);
+        onUpdate();
+      } catch (err) { alert('Failed to delete note'); }
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-       <div className="flex justify-between items-center"><h3 className="text-2xl font-black text-gray-900 tracking-tight">Trip Journal</h3><button className="bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-all"><Plus className="w-5 h-5" /> Write New Entry</button></div>
-       <div className="grid grid-cols-1 gap-6">{notes.map(note => (<motion.div key={note.id} whileHover={{ y: -5 }} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all"><div className="flex justify-between items-start mb-4"><div><h4 className="text-xl font-black text-gray-900">{note.title}</h4><p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">{new Date(note.date).toLocaleDateString()}</p></div><div className="flex gap-2"><button className="p-2 text-gray-400 hover:text-blue-600 transition-colors"><Edit3 className="w-4 h-4" /></button><button className="p-2 text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button></div></div><p className="text-gray-600 leading-relaxed font-medium">{note.content}</p></motion.div>))}</div>
+    <div className="max-w-4xl mx-auto space-y-10">
+      <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-blue-50/50">
+         <div>
+            <h3 className="text-3xl font-black text-gray-900 tracking-tight">Trip Journal</h3>
+            <p className="text-gray-400 font-bold text-sm mt-1">Capture your favorite moments and important details.</p>
+         </div>
+         <button 
+           onClick={() => { setEditNote(null); setShowAdd(true); }}
+           className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg active:scale-95"
+         >
+            <Plus className="w-5 h-5" /> WRITE ENTRY
+         </button>
+      </div>
+
+      <div className="space-y-6">
+         {notes.map((note: any) => (
+           <motion.div 
+             key={note.id} 
+             whileHover={{ y: -5 }} 
+             className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm hover:shadow-2xl transition-all group"
+           >
+              <div className="flex justify-between items-start mb-6">
+                 <div>
+                    <div className="flex items-center gap-3 mb-2">
+                       <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">Memories</span>
+                       <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {new Date(note.timestamp).toLocaleString()}
+                       </span>
+                    </div>
+                    {note.stopId && (
+                       <p className="flex items-center gap-1.5 text-xs font-bold text-blue-400">
+                          <MapPin className="w-3.5 h-3.5" /> Tied to {trip.stops.find((s: any) => s.id === note.stopId)?.cityName}
+                       </p>
+                    )}
+                 </div>
+                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => { setEditNote(note); setShowAdd(true); }}
+                      className="p-3 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                    >
+                       <Edit3 className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(note.id)}
+                      className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                       <Trash2 className="w-5 h-5" />
+                    </button>
+                 </div>
+              </div>
+              <p className="text-gray-600 text-lg leading-relaxed font-medium whitespace-pre-wrap">{note.content}</p>
+           </motion.div>
+         ))}
+
+         {notes.length === 0 && (
+           <div className="py-24 text-center bg-gray-50/50 rounded-[4rem] border-4 border-dashed border-gray-100">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                 <Edit3 className="w-10 h-10 text-gray-200" />
+              </div>
+              <h4 className="text-2xl font-black text-gray-300">No journal entries yet</h4>
+              <p className="text-gray-400 font-bold mt-2">Start documenting your journey today!</p>
+           </div>
+         )}
+      </div>
+
+      <AnimatePresence>
+        {showAdd && (
+          <Modal 
+            title={editNote ? "Edit Entry" : "New Journal Entry"} 
+            onClose={() => setShowAdd(false)} 
+            loading={loading}
+            onSubmit={async (e: any) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              const data = Object.fromEntries(formData);
+              setLoading(true);
+              try {
+                if (editNote) {
+                  await api.put(`/notes/${editNote.id}`, data);
+                } else {
+                  await api.post(`/notes/${trip.id}`, data);
+                }
+                setShowAdd(false);
+                onUpdate();
+              } catch (err) { alert('Failed to save entry'); } finally { setLoading(false); }
+            }}
+          >
+            <div className="space-y-6">
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tie to Destination (Optional)</label>
+                  <select name="stopId" defaultValue={editNote?.stopId || ""} className="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none font-bold text-gray-600">
+                     <option value="">Full Trip Note</option>
+                     {trip.stops?.map((s: any) => (
+                       <option key={s.id} value={s.id}>{s.cityName}</option>
+                     ))}
+                  </select>
+               </div>
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Your Note</label>
+                  <textarea 
+                    name="content" 
+                    rows={6}
+                    required
+                    defaultValue={editNote?.content || ""}
+                    placeholder="Describe your day, save a confirmation number, or jot down a memory..."
+                    className="w-full px-6 py-4 rounded-[2rem] bg-gray-50 border-none focus:ring-4 focus:ring-blue-100 transition-all font-medium text-gray-700 text-lg resize-none"
+                  />
+               </div>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

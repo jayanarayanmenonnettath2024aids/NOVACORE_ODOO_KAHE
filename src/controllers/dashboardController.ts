@@ -37,11 +37,29 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
     const uniqueCountries = new Set(trips.flatMap(t => t.stops.map(s => s.country)));
 
+    // Fetch persistent notifications
+    const notifications = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+
+    // AI Dynamic Reminders based on next trip
+    const reminders = [];
+    const next = upcomingTrips[0];
+    if (next) {
+      const days = Math.ceil((next.startDate.getTime() - Date.now()) / (1000 * 3600 * 24));
+      if (days <= 7) reminders.push({ id: 'r1', title: 'Final Packing', message: `Your trip to ${next.name} starts in ${days} days! Time to finalize your checklist.`, type: 'alert' });
+      if (days <= 30) reminders.push({ id: 'r2', title: 'Local Insights', message: `Don't forget to check the weather for your ${next.stops[0]?.cityName || 'destination'} stops.`, type: 'info' });
+    }
+
     res.json({
       userName: user?.name,
       upcomingTrips: upcomingTrips.slice(0, 3),
       recentTrips: recentTrips.slice(0, 3),
       ongoingTrips,
+      notifications,
+      aiReminders: reminders,
       userStats: {
         totalTrips: trips.length,
         countriesPlanned: uniqueCountries.size,
@@ -50,7 +68,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
       },
       budgetHighlights: {
         totalUpcomingBudget,
-        currency: 'USD'
+        currency: upcomingTrips[0]?.currency || 'INR'
       },
       recentActivities,
       publicTrips: publicTrips.filter(t => t.userId !== userId),

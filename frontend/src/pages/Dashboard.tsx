@@ -12,6 +12,7 @@ import api from '../api/axios';
 const Dashboard = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [timeLeft, setTimeLeft] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,10 +29,36 @@ const Dashboard = () => {
     fetchDashboard();
   }, []);
 
+  // Real-time Countdown Logic
+  useEffect(() => {
+    if (!data?.upcomingTrips?.[0]) return;
+    
+    const target = new Date(data.upcomingTrips[0].startDate).getTime();
+    
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = target - now;
+      
+      if (distance < 0) {
+        clearInterval(interval);
+        setTimeLeft('ARRIVED');
+        return;
+      }
+      
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+      
+      setTimeLeft({ days, hours, minutes, seconds });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [data]);
+
   if (loading) return <DashboardSkeleton />;
 
   const nextTrip = data?.upcomingTrips?.[0];
-  const daysToTrip = nextTrip ? Math.ceil((new Date(nextTrip.startDate).getTime() - Date.now()) / (1000 * 3600 * 24)) : null;
 
   return (
     <div className="space-y-12 pb-20">
@@ -90,29 +117,35 @@ const Dashboard = () => {
           {nextTrip && (
             <motion.div 
               whileHover={{ scale: 1.01 }}
-              className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-blue-50 border border-gray-50 flex flex-col md:flex-row items-center gap-10"
+              className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-blue-50 border border-gray-50 flex flex-col md:flex-row items-center gap-10 overflow-hidden relative"
             >
-              <div className="flex-1">
+              <div className="flex-1 relative z-10">
                 <div className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-widest mb-2">
                   <Zap className="w-4 h-4" />
-                  <span>NEXT ADVENTURE</span>
+                  <span>ADVENTURE COUNTDOWN</span>
                 </div>
                 <h3 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">{nextTrip.name}</h3>
                 <p className="text-gray-500 font-bold flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-blue-300" />
-                  Starts {new Date(nextTrip.startDate).toLocaleDateString()}
+                  Departure: {new Date(nextTrip.startDate).toLocaleDateString()}
                 </p>
               </div>
-              <div className="flex items-center gap-8 border-l pl-10 border-gray-100">
-                <div className="text-center">
-                  <span className="text-6xl font-black text-blue-600 leading-none">{daysToTrip}</span>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Days to go</p>
-                </div>
-                <div className="bg-blue-50 p-6 rounded-[2rem] flex flex-col items-center">
-                  <Sun className="w-10 h-10 text-amber-500 mb-1" />
-                  <span className="text-xl font-black text-blue-900 tracking-tight">22°C</span>
-                </div>
+              
+              <div className="flex items-center gap-4 relative z-10">
+                {timeLeft === 'ARRIVED' ? (
+                  <div className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black animate-bounce shadow-xl">
+                    LAUNCH TIME! 🚀
+                  </div>
+                ) : timeLeft && (
+                  <div className="flex gap-2">
+                    <CountdownBlock value={timeLeft.days} label="DAYS" />
+                    <CountdownBlock value={timeLeft.hours} label="HRS" />
+                    <CountdownBlock value={timeLeft.minutes} label="MIN" />
+                    <CountdownBlock value={timeLeft.seconds} label="SEC" color="blue" />
+                  </div>
+                )}
               </div>
+              <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-blue-50/30 -skew-x-12 translate-x-20"></div>
             </motion.div>
           )}
 
@@ -154,6 +187,25 @@ const Dashboard = () => {
         </div>
 
         <div className="space-y-10">
+          {/* AI Smart Reminders */}
+          {data?.aiReminders?.length > 0 && (
+            <section className="bg-blue-600 rounded-[3rem] p-8 text-white shadow-2xl relative overflow-hidden">
+               <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Zap className="w-5 h-5 text-amber-400" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-200">AI SMART REMINDER</span>
+                  </div>
+                  {data.aiReminders.map((r: any) => (
+                    <div key={r.id} className="mb-6 last:mb-0">
+                       <p className="text-xl font-black mb-2">{r.title}</p>
+                       <p className="text-blue-100 text-sm font-medium leading-relaxed">{r.message}</p>
+                    </div>
+                  ))}
+               </div>
+               <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            </section>
+          )}
+
           <section className="bg-white p-8 rounded-[3rem] shadow-xl border border-gray-50">
             <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -169,21 +221,27 @@ const Dashboard = () => {
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
                 <Activity className="w-6 h-6" />
               </div>
-              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Activity</h3>
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Notifications</h3>
             </div>
             <div className="space-y-8">
-              {data?.recentActivities?.map((activity: any) => (
-                <div key={activity.id} className="flex gap-4 relative">
+              {data?.notifications?.length > 0 ? data.notifications.map((notif: any) => (
+                <div key={notif.id} className="flex gap-4 relative">
                   <div className="mt-1.5 z-10">
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.4)]"></div>
+                    <div className={`w-2.5 h-2.5 rounded-full ${notif.type === 'alert' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]' : 'bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.4)]'}`}></div>
                   </div>
                   <div className="pb-2 border-b border-gray-50 w-full">
-                    <p className="text-sm font-bold text-gray-800 leading-snug">{activity.action} <span className="text-blue-600">{activity.target}</span></p>
-                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">Just Now</p>
+                    <p className="text-sm font-bold text-gray-800 leading-snug">{notif.title}</p>
+                    <p className="text-xs text-gray-500 mt-1">{notif.message}</p>
+                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">
+                      {new Date(notif.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
-                  <div className="absolute left-[4.5px] top-4 bottom-0 w-0.5 bg-gray-100 last:hidden"></div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-400 text-sm font-bold italic">No new notifications.</p>
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -225,6 +283,15 @@ const QuickAction = ({ icon: Icon, label, to, color }: any) => {
     </Link>
   );
 };
+
+const CountdownBlock = ({ value, label, color }: any) => (
+  <div className="flex flex-col items-center">
+    <div className={`w-14 h-16 ${color === 'blue' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-2xl flex items-center justify-center text-2xl font-black shadow-sm`}>
+      {String(value).padStart(2, '0')}
+    </div>
+    <span className="text-[8px] font-black text-gray-400 mt-2 tracking-widest">{label}</span>
+  </div>
+);
 
 const DashboardSkeleton = () => (
   <div className="space-y-12 animate-pulse p-4">

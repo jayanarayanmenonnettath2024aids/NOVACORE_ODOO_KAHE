@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Calendar, MapPin, Globe, Share2, Copy, 
   Clock, Activity, Star, 
-  Facebook, Twitter, Linkedin
+  MessageCircle, Send
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -138,18 +138,18 @@ const PublicTrip = () => {
                <div className="bg-gray-900 p-8 rounded-[3rem] shadow-xl text-white">
                   <h4 className="text-xl font-black mb-6 flex items-center gap-2"><Share2 className="w-5 h-5 text-blue-400" /> Share Journey</h4>
                   <div className="grid grid-cols-3 gap-4">
-                     <button className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
-                        <Facebook className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Facebook</span>
-                     </button>
-                     <button className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
-                        <Twitter className="w-6 h-6 text-sky-400 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Twitter</span>
-                     </button>
-                     <button className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
-                        <Linkedin className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">LinkedIn</span>
-                     </button>
+                      <button className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+                         <MessageCircle className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
+                         <span className="text-[10px] font-black uppercase tracking-widest">Chat</span>
+                      </button>
+                      <button className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+                         <Send className="w-6 h-6 text-sky-400 group-hover:scale-110 transition-transform" />
+                         <span className="text-[10px] font-black uppercase tracking-widest">Send</span>
+                      </button>
+                      <button className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all group">
+                         <Globe className="w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform" />
+                         <span className="text-[10px] font-black uppercase tracking-widest">Web</span>
+                      </button>
                   </div>
                   <div className="mt-8 pt-8 border-t border-white/10 text-center">
                      <p className="text-xs text-white/40 font-bold uppercase tracking-[0.2em] mb-4">PUBLIC URL</p>

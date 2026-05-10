@@ -64,10 +64,34 @@ export const generateSmartAdvice = (trip: any) => {
     });
   }
 
+  // 4. Companion Insight
+  if (trip.companionType === 'Solo') {
+    insights.push({
+      type: 'safety',
+      title: 'Solo Explorer Tip',
+      content: 'Traveling solo is brave! Stay in highly-rated social hostels and keep a digital copy of your ID in the Traveloop Vault.',
+      severity: 'info'
+    });
+  } else if (trip.companionType === 'Couple') {
+    insights.push({
+      type: 'romance',
+      title: 'Romantic Touch',
+      content: 'Planning for two? We suggest booking at least one "Fine Dining" activity for a memorable evening.',
+      severity: 'success'
+    });
+  } else if (trip.companionType === 'Family') {
+    insights.push({
+      type: 'family',
+      title: 'Family Friendly',
+      content: 'Traveling with family? Check for "Park" or "Museum" activities to keep everyone engaged.',
+      severity: 'suggestion'
+    });
+  }
+
   return insights;
 };
 
-export const predictTotalCost = (trip: any, currency: string = 'USD') => {
+export const predictTotalCost = (trip: any, currency: string = 'INR') => {
   const baseDayCost = 150; // Average global daily cost (Stay + Food)
   const multiplier = AI_REGIONS[trip.stops?.[0]?.country]?.costIndex || 0.5;
   
@@ -95,5 +119,8 @@ export const getPackingSuggestions = (trip: any) => {
   const regionExtras = region === 'Japan' || region === 'UK' ? ['Umbrella'] : 
                       region === 'Indonesia' || region === 'Australia' ? ['Sunscreen', 'Swimwear'] : [];
 
-  return [...base, ...type, ...regionExtras];
+  const companionExtras = trip.companionType === 'Family' ? ['First Aid Kit', 'Kids Entertainment'] : 
+                         trip.companionType === 'Colleague' ? ['Business Cards', 'Formal Wear'] : [];
+
+  return [...base, ...type, ...regionExtras, ...companionExtras];
 };

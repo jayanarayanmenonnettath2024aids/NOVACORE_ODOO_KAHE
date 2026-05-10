@@ -3,19 +3,35 @@ import prisma from '../prisma';
 
 export const createTrip = async (req: Request, res: Response) => {
   try {
-    const { name, startDate, endDate, description, coverPhotoUrl, isPublic, type } = req.body;
+    const { 
+      name, slug, startDate, endDate, description, coverPhotoUrl, 
+      type, companionType, currency, budgetEstimate, 
+      travelPace, mood, transportType, visibility, invitees 
+    } = req.body;
     const userId = req.user!.userId;
+
+    // Auto-generate slug if not provided
+    const tripSlug = slug || `${name.toLowerCase().replace(/ /g, '-')}-${Date.now().toString().slice(-4)}`;
 
     const trip = await prisma.trip.create({
       data: {
         userId,
         name,
+        slug: tripSlug,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         description,
         coverPhotoUrl,
         type: type || "National",
-        isPublic: isPublic || false,
+        companionType: companionType || "Solo",
+        currency: currency || "INR",
+        budgetEstimate: budgetEstimate ? parseFloat(budgetEstimate) : null,
+        travelPace: travelPace || "Moderate",
+        mood,
+        transportType,
+        visibility: visibility || "Private",
+        invitees,
+        isPublic: visibility === "Public",
       }
     });
 
@@ -82,7 +98,11 @@ export const updateTrip = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.user!.userId;
-    const { name, startDate, endDate, description, coverPhotoUrl, isPublic, type } = req.body;
+    const { 
+      name, slug, startDate, endDate, description, coverPhotoUrl, 
+      type, companionType, currency, budgetEstimate, 
+      travelPace, mood, transportType, visibility, invitees 
+    } = req.body;
 
     const trip = await prisma.trip.findFirst({ where: { id, userId } });
     if (!trip) return res.status(404).json({ error: 'Trip not found' });
@@ -91,12 +111,21 @@ export const updateTrip = async (req: Request, res: Response) => {
       where: { id },
       data: {
         name,
+        slug,
         startDate: startDate ? new Date(startDate) : undefined,
         endDate: endDate ? new Date(endDate) : undefined,
         description,
         coverPhotoUrl,
         type,
-        isPublic
+        companionType,
+        currency,
+        budgetEstimate: budgetEstimate ? parseFloat(budgetEstimate) : undefined,
+        travelPace,
+        mood,
+        transportType,
+        visibility,
+        invitees,
+        isPublic: visibility === "Public"
       }
     });
 
