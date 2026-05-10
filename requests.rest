@@ -1,0 +1,67 @@
+### Traveloop API Test Requests
+
+@baseUrl = http://localhost:5000/api
+@token = {{login.response.body.token}}
+@tripId = {{createTrip.response.body.id}}
+
+### 1. Health Check
+GET {{baseUrl}}/health
+
+### 2. Signup
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@traveloop.com",
+  "password": "password123",
+  "name": "Test User"
+}
+
+### 3. Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@traveloop.com",
+  "password": "password123"
+}
+
+### 4. Get Dashboard
+GET {{baseUrl}}/dashboard
+Authorization: Bearer {{token}}
+
+### 5. Create Trip
+# @name createTrip
+POST {{baseUrl}}/trips
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Japan Adventure",
+  "startDate": "2026-10-01T00:00:00Z",
+  "endDate": "2026-10-15T00:00:00Z",
+  "description": "Two weeks exploring Tokyo and Kyoto",
+  "isPublic": true
+}
+
+### 6. Get All Trips
+GET {{baseUrl}}/trips
+Authorization: Bearer {{token}}
+
+### 7. Add Stop to Trip
+POST {{baseUrl}}/trips/{{tripId}}/stops
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cityName": "Tokyo",
+  "country": "Japan",
+  "startDate": "2026-10-01T00:00:00Z",
+  "endDate": "2026-10-08T00:00:00Z",
+  "orderIndex": 0
+}
+
+### 8. Search Mock Cities
+GET {{baseUrl}}/search/cities?q=Tokyo
+Authorization: Bearer {{token}}

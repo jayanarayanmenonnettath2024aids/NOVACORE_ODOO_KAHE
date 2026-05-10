@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(uuid())
+  email             String             @unique
+  passwordHash      String
+  name              String
+  photoUrl          String?
+  language          String             @default("en")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  trips             Trip[]
+  savedDestinations SavedDestination[]
+}
+
+model Trip {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  startDate     DateTime
+  endDate       DateTime
+  description   String?
+  coverPhotoUrl String?
+  type          String        @default("National") // "National" or "International"
+  isPublic      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  stops         Stop[]
+  expenses      Expense[]
+  packingItems  PackingItem[]
+  notes         Note[]
+}
+
+model Stop {
+  id         String     @id @default(uuid())
+  tripId     String
+  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  cityName   String
+  country    String
+  startDate  DateTime?
+  endDate    DateTime?
+  orderIndex Int
+  activities Activity[]
+  notes      Note[]
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  stopId      String
+  stop        Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  cost        Float    @default(0)
+  duration    Int?     // duration in minutes
+  type        String?  // e.g., 'Sightseeing', 'Food', 'Adventure'
+  startTime   DateTime?
+}
+
+model Expense {
+  id       String @id @default(uuid())
+  tripId   String
+  trip     Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  category String // 'Transport', 'Stay', 'Activities', 'Meals'
+  amount   Float
+  currency String @default("USD")
+}
+
+model PackingItem {
+  id       String  @id @default(uuid())
+  tripId   String
+  trip     Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  name     String
+  category String  // 'Clothing', 'Documents', 'Electronics'
+  isPacked Boolean @default(false)
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  stopId    String?
+  stop      Stop?    @relation(fields: [stopId], references: [id], onDelete: SetNull)
+  content   String
+  timestamp DateTime @default(now())
+}
+
+model SavedDestination {
+  id       String @id @default(uuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cityName String
+  country  String
+}

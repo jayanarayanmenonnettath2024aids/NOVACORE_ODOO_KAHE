@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traveloop - Minimal UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">✈️ Traveloop Minimal UI</h1>
+        <button id="logoutBtn" class="hidden bg-white text-blue-600 px-4 py-1 rounded font-semibold">Logout</button>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        
+        <!-- LOGIN SECTION -->
+        <div id="loginSection" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md mt-10">
+            <h2 class="text-2xl font-bold mb-6 text-center">Login to Test API</h2>
+            <p class="text-sm text-gray-500 mb-4 text-center">Use the seeded demo account</p>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium">Email</label>
+                    <input type="email" id="email" value="demo@traveloop.com" class="w-full border p-2 rounded" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Password</label>
+                    <input type="password" id="password" value="password123" class="w-full border p-2 rounded" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded font-bold hover:bg-blue-700">Login</button>
+            </form>
+            <div id="loginError" class="text-red-500 text-sm mt-3 hidden"></div>
+        </div>
+
+        <!-- DASHBOARD SECTION -->
+        <div id="dashboardSection" class="hidden space-y-8">
+            <h2 class="text-3xl font-bold">Welcome, <span id="userName">Traveler</span>! 👋</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Upcoming Trips -->
+                <div class="col-span-2 bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold mb-4 border-b pb-2">Your Trips</h3>
+                    <div id="tripsList" class="space-y-4">
+                        <!-- Trips injected here -->
+                    </div>
+                </div>
+
+                <!-- Budget Highlight -->
+                <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-green-500">
+                    <h3 class="text-xl font-bold mb-4">Upcoming Budget</h3>
+                    <div class="text-4xl font-black text-green-600" id="totalBudget">$0</div>
+                    <p class="text-gray-500 text-sm mt-2">Estimated cost for planned trips</p>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+                <h3 class="text-xl font-bold mb-4 border-b pb-2">Create New Trip (Test POST)</h3>
+                <form id="createTripForm" class="flex gap-4">
+                    <input type="text" id="newTripName" placeholder="Trip Name (e.g. Hawaii)" class="border p-2 rounded flex-1" required>
+                    <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded font-bold">Create Trip</button>
+                </form>
+            </div>
+            
+            <!-- Raw JSON Output Debugger -->
+            <div class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm mt-8">
+                <h4 class="text-white font-bold mb-2">RAW JSON API RESPONSE (Dashboard)</h4>
+                <pre id="rawJson"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        let token = localStorage.getItem('traveloop_token');
+
+        const loginSection = document.getElementById('loginSection');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loginError = document.getElementById('loginError');
+
+        // Check if logged in
+        if (token) {
+            showDashboard();
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    token = data.token;
+                    localStorage.setItem('traveloop_token', token);
+                    localStorage.setItem('traveloop_user', data.user.name);
+                    loginError.classList.add('hidden');
+                    showDashboard();
+                } else {
+                    loginError.textContent = data.error || 'Login failed';
+                    loginError.classList.remove('hidden');
+                }
+            } catch (err) {
+                loginError.textContent = 'Network error';
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('traveloop_token');
+            localStorage.removeItem('traveloop_user');
+            token = null;
+            loginSection.classList.remove('hidden');
+            dashboardSection.classList.add('hidden');
+            logoutBtn.classList.add('hidden');
+        });
+
+        async function showDashboard() {
+            loginSection.classList.add('hidden');
+            dashboardSection.classList.remove('hidden');
+            logoutBtn.classList.remove('hidden');
+            
+            document.getElementById('userName').textContent = localStorage.getItem('traveloop_user');
+
+            // Fetch Dashboard Data
+            try {
+                const res = await fetch(`${API_URL}/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                document.getElementById('rawJson').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('totalBudget').textContent = `$${data.budgetHighlights.totalUpcomingBudget}`;
+
+                const tripsHtml = data.upcomingTrips.map(trip => `
+                    <div class="border p-4 rounded bg-gray-50 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-lg text-blue-700">${trip.name}</h4>
+                            <p class="text-sm text-gray-500">${new Date(trip.startDate).toLocaleDateString()} - ${new Date(trip.endDate).toLocaleDateString()}</p>
+                            <p class="text-sm mt-1">${trip.description || ''}</p>
+                        </div>
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded border border-blue-200">${trip.stops.length} Stops</span>
+                    </div>
+                `).join('') + data.recentTrips.map(trip => `
+                    <div class="border p-4 rounded bg-gray-200 flex justify-between items-center opacity-70">
+                        <div>
+                            <h4 class="font-bold text-lg">${trip.name} (Completed)</h4>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('tripsList').innerHTML = tripsHtml || '<p class="text-gray-500">No trips found.</p>';
+            } catch (err) {
+                console.error("Failed to load dashboard", err);
+            }
+        }
+
+        // Test POST route
+        document.getElementById('createTripForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('newTripName').value;
+            
+            const start = new Date();
+            const end = new Date();
+            end.setDate(end.getDate() + 7);
+
+            try {
+                const res = await fetch(`${API_URL}/trips`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        startDate: start.toISOString(),
+                        endDate: end.toISOString(),
+                        description: "A trip created from the minimal UI",
+                        isPublic: true
+                    })
+                });
+                
+                if (res.ok) {
+                    alert('Trip created successfully! Refreshing dashboard...');
+                    document.getElementById('newTripName').value = '';
+                    showDashboard();
+                } else {
+                    const data = await res.json();
+                    alert('Failed to create trip: ' + JSON.stringify(data));
+                }
+            } catch (err) {
+                alert('Network error');
+            }
+        });
+
+    </script>
+</body>
+</html>
