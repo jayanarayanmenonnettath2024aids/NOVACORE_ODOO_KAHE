@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  User, Mail, Camera, Save, Loader2, Compass, MapPin, Calendar, ArrowRight
+  User, Camera, Save, Loader2, Compass, MapPin, Calendar, ArrowRight
 } from 'lucide-react';
 import api from '../api/axios';
 

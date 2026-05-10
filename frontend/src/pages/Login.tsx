@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Mail, Lock, Loader2, Plane } from 'lucide-react';
@@ -10,14 +10,28 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
 
+  useEffect(() => {
+    // Clear old bypass token to force a real backend login
+    if (localStorage.getItem('token') === 'admin-token-bypass') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  }, []);
+
   const onSubmit = async (data: any) => {
     setLoading(true);
     setError('');
+    
     try {
       const response = await api.post('/auth/login', data);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate('/dashboard');
+      
+      if (response.data.user.role === 'ADMIN') {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to login. Please check your credentials.');
     } finally {
@@ -29,10 +43,12 @@ const Login = () => {
     <div 
       className="min-h-screen w-full flex flex-col relative overflow-hidden"
       style={{
-        backgroundImage: 'url("/login-bg.png")', // Using the local user-provided image
+        backgroundImage: 'url("/Login page image.png")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        fontFamily: "'Plus Jakarta Sans', sans-serif"
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        fontFamily: "'Outfit', sans-serif"
       }}
     >
       {/* Solid White Login Card Container */}
@@ -41,9 +57,9 @@ const Login = () => {
           
           {/* Logo Box */}
           <div className="flex justify-center mb-6">
-             <div className="w-20 h-20 bg-[#6b21a8] rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
-                <Plane className="w-8 h-8 mb-1" />
-                <span className="text-[10px] font-black tracking-widest leading-none">traveloop</span>
+             <div className="w-16 h-16 bg-[#6b21a8] rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
+                <Plane className="w-7 h-7 mb-0.5" />
+                <span className="text-[9px] font-black tracking-widest leading-none">traveloop</span>
              </div>
           </div>
 

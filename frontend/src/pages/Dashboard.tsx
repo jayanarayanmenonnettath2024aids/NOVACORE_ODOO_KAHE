@@ -3,9 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Calendar, MapPin, DollarSign, Clock, 
-  CheckCircle2, Briefcase, Globe, Sun, 
-  ChevronRight, Activity, Zap, Star, TrendingUp, ArrowRight,
-  AlertCircle, Navigation, Target, Sparkles, Heart, Wallet, Loader2, Search, SlidersHorizontal, ArrowUpDown, Filter
+  CheckCircle2, Briefcase, Globe, 
+  ChevronRight, 
+  Target, Wallet, Loader2, Search
 } from 'lucide-react';
 import api from '../api/axios';
 
@@ -72,6 +72,16 @@ const Dashboard = () => {
 
   // Slide interval timer for Banner
   useEffect(() => {
+    // Redirect Admin to Admin Panel
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (user.role === 'ADMIN') {
+        navigate('/admin-dashboard');
+        return;
+      }
+    }
+
     const slideTimer = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % bannerSlides.length);
     }, 5000);

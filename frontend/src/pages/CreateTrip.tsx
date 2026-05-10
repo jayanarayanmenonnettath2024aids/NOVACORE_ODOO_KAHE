@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, MapPin, Search, Compass, ChevronRight, 
@@ -41,6 +41,7 @@ const suggestionBank = [
 
 const CreateTrip = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [multiCities, setMultiCities] = useState<string[]>(['']);
@@ -52,7 +53,7 @@ const CreateTrip = () => {
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
-    startDate: '',
+    startDate: location.state?.prefillDate || '',
     endDate: '',
     type: 'National',
     companionType: 'Solo',

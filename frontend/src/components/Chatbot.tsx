@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
+import { Iphone16Pro } from './ui/iphone-16-pro';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -14,7 +15,15 @@ export const Chatbot = () => {
     { role: 'assistant', content: 'Hello! I am your Traveloop AI assistant. How can I help you plan your next adventure today?' }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [time, setTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -61,30 +70,14 @@ export const Chatbot = () => {
 
   return (
     <>
-      {/* Floating Toggle Button with Explicit Label */}
+      {/* Floating Toggle Button */}
       <div className="fixed bottom-6 right-6 z-[1000] flex flex-col items-end gap-3">
-        <AnimatePresence>
-          {!isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.8 }}
-              className="bg-white px-4 py-2 rounded-2xl shadow-2xl border border-purple-100 flex items-center gap-2 mb-1"
-            >
-              <div className="w-2 h-2 bg-purple-500 rounded-full" />
-              <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest whitespace-nowrap">
-                Ask AI Travel Assistant
-              </span>
-              <div className="absolute -bottom-1 right-6 w-3 h-3 bg-white border-r border-b border-purple-100 rotate-45" />
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <motion.button
           whileHover={{ scale: 1.1, rotate: 5 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsOpen(!isOpen)}
-          className="w-16 h-16 bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white rounded-2xl shadow-[0_10px_40px_rgba(147,51,234,0.5)] flex items-center justify-center border-2 border-white/30 relative overflow-hidden group"
+          className="w-16 h-16 bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white rounded-full shadow-[0_10px_40px_rgba(147,51,234,0.5)] flex items-center justify-center border-2 border-white/30 relative overflow-hidden group"
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           {isOpen ? <X className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
@@ -94,27 +87,44 @@ export const Chatbot = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95, transformOrigin: 'bottom right' }}
+            initial={{ opacity: 0, y: 20, scale: 0.8, transformOrigin: 'bottom right' }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 z-[1000] w-[90vw] md:w-[400px] h-[550px] bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.3)] border border-white/20 overflow-hidden flex flex-col"
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            className="fixed bottom-24 right-6 z-[1000] pointer-events-none"
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-fuchsia-600 p-6 text-white flex items-center justify-between shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
-                  <Bot className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-black text-sm uppercase tracking-widest">Traveloop AI</h3>
-                  <div className="flex items-center gap-1.5 opacity-80">
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-bold">Online & Ready</span>
+            <div className="pointer-events-auto">
+              <Iphone16Pro 
+                width={350} 
+                height={600} 
+                showIsland={true}
+                frameColor="black"
+              >
+                <div className="flex flex-col h-full bg-white relative">
+                  {/* Status Bar / Time */}
+                  <div className="absolute top-8 left-0 right-0 px-6 flex justify-between items-center z-20 pointer-events-none">
+                    <span className="text-[10px] font-black text-gray-900">{time}</span>
+                    <div className="flex gap-1 items-center">
+                      <div className="w-3 h-1.5 bg-gray-900 rounded-sm" />
+                      <div className="w-1 h-1 bg-gray-900 rounded-full" />
+                    </div>
                   </div>
-                </div>
-              </div>
-              <Sparkles className="w-5 h-5 opacity-50" />
-            </div>
+
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-purple-600 to-fuchsia-600 p-6 pt-14 text-white flex items-center justify-between shadow-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+                        <Bot className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-xs uppercase tracking-widest">Yatra</h3>
+                        <div className="flex items-center gap-1.5 opacity-80">
+                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                          <span className="text-[10px] font-bold">Online</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Sparkles className="w-5 h-5 opacity-50" />
+                  </div>
 
             {/* Chat Area */}
             <div 
@@ -176,7 +186,10 @@ export const Chatbot = () => {
               </div>
               <p className="text-[10px] text-center text-gray-400 font-bold mt-4 tracking-widest uppercase">Powered by Lyzr AI Studio</p>
             </form>
-          </motion.div>
+          </div>
+        </Iphone16Pro>
+      </div>
+    </motion.div>
         )}
       </AnimatePresence>
     </>

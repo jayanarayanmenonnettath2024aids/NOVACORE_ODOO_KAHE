@@ -13,6 +13,10 @@ model User {
   passwordHash      String
   name              String
   photoUrl          String?
+  phone             String?
+  city              String?
+  country           String?
+  bio               String?
   language          String             @default("en")
   role              String             @default("USER") // "USER" or "ADMIN"
   createdAt         DateTime           @default(now())

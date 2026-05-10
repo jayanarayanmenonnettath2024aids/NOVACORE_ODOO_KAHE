@@ -1,13 +1,28 @@
-import React from 'react'; 
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plane, LogOut, User as UserIcon } from 'lucide-react';
+import { Plane, LogOut, User as UserIcon, Calendar as CalendarIcon, LayoutGrid, Home, Compass, MapPin, Plus, Settings } from 'lucide-react';
 import { Sheet, SheetContent, SheetFooter } from '@/components/ui/sheet';
+import NavHeader from '@/components/ui/nav-header';
+import { GlassCalendar } from '@/components/ui/glass-calendar';
+import CircularNavigation from '@/components/ui/circular-navigation-bar';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { MenuToggle } from '@/components/ui/menu-toggle';
 
 export function SimpleHeader() {
   const [open, setOpen] = React.useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+  const calendarRef = React.useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setIsCalendarOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
   let user = null;
@@ -30,6 +45,7 @@ export function SimpleHeader() {
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'My Trips', href: '/trips' },
     { label: 'Explore', href: '/explore' },
+    { label: 'Billing', href: '/billing/default' },
   ] : [
     { label: 'Features', href: '/#features' },
     { label: 'Explore', href: '/#features' },
@@ -46,35 +62,55 @@ export function SimpleHeader() {
         </Link>
 
         {/* Desktop Links */}
+        <div className="hidden items-center gap-4 lg:flex flex-1 justify-center px-4">
+          <NavHeader links={links} />
+        </div>
+
         <div className="hidden items-center gap-4 lg:flex">
-          {links.map((link) => (
-            <Link
-              key={link.label}
-              className={buttonVariants({ variant: 'ghost', className: 'text-gray-600 hover:text-purple-600 font-semibold text-sm' })}
-              to={link.href}
-            >
-              {link.label}
-            </Link>
-          ))}
 
           {token ? (
-            <div className="flex items-center gap-4 pl-4 border-l">
-              <Link to="/profile" className="text-right hover:opacity-80 transition-opacity">
-                <p className="text-xs font-semibold text-gray-800">{user?.name}</p>
-                <p className="text-[10px] text-gray-500">{user?.email}</p>
-              </Link>
-              <Link to="/profile" className="p-2 bg-gray-50 rounded-full hover:bg-purple-50 text-gray-500 hover:text-purple-600 transition-all">
-                 <UserIcon className="w-4 h-4" />
-              </Link>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                title="Logout"
+            <div className="flex items-center gap-3 pl-4 border-l border-gray-100">
+              {/* Profile Pill Button */}
+              <Link 
+                to="/profile" 
+                className="flex items-center gap-3 px-2 py-1.5 pr-4 rounded-full bg-white border border-gray-100 hover:border-purple-200 hover:bg-purple-50/50 shadow-sm hover:shadow-md transition-all group"
               >
-                <LogOut className="w-4 h-4" />
-              </Button>
+                <div className="p-1.5 bg-gradient-to-tr from-purple-600 to-fuchsia-600 text-white rounded-full shadow-inner group-hover:scale-105 transition-transform">
+                  <UserIcon className="w-4 h-4" strokeWidth={2.5} />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-[13px] font-black text-gray-800 group-hover:text-purple-700 transition-colors leading-tight">{user?.name}</span>
+                  <span className="text-[10px] font-bold text-gray-400 leading-tight">{user?.email}</span>
+                </div>
+              </Link>
+
+              {/* Utility Tools Pill */}
+              <div className="flex items-center gap-1 p-1 bg-gray-50/80 border border-gray-200/60 rounded-full shadow-inner backdrop-blur-sm">
+                <div className="relative" ref={calendarRef}>
+                  <button 
+                    onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                    className="p-2 text-gray-500 hover:text-purple-600 hover:bg-white rounded-full transition-all hover:shadow-sm focus:outline-none"
+                    title="Calendar"
+                  >
+                     <CalendarIcon className="w-4 h-4" strokeWidth={2.5} />
+                  </button>
+                  {isCalendarOpen && (
+                    <div className="absolute right-0 mt-4 z-50 origin-top-right">
+                      <GlassCalendar />
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-[1px] h-4 bg-gray-300 mx-1 rounded-full"></div>
+
+                <button 
+                  onClick={handleLogout}
+                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-full transition-all hover:shadow-sm focus:outline-none"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -152,7 +188,7 @@ export function SimpleHeader() {
                 )}
               </SheetFooter>
             </SheetContent>
-            
+
             {/* Standard Button trigger to toggle Open state of mobile drawer */}
             <Button size="icon" variant="outline" onClick={() => setOpen(!open)} className="border-gray-200 hover:bg-purple-50 hover:text-purple-600 rounded-xl">
               <MenuToggle

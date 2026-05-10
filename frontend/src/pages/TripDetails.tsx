@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, MapPin, DollarSign, Package, FileText,
-  ChevronLeft, ChevronDown, Plus, Clock, Trash2, CheckCircle2, Circle, Check,
-  BarChart3, TrendingDown, AlertCircle, Sparkles,
-  Search, X, Edit3, Loader2, Users, Users2, Wallet, Heart, Zap, ArrowUpRight, TrendingUp
+  ChevronLeft, ChevronDown, Plus, Trash2, CheckCircle2, Check,
+  AlertCircle, Sparkles, Clock, ArrowUpRight,
+  Search, X, Edit3, Loader2, Users, Users2, Wallet, Heart, Zap, TrendingUp
 } from 'lucide-react';
 
 import api from '../api/axios';
@@ -134,7 +134,7 @@ const TripDetails = () => {
           transition={{ duration: 0.3, ease: 'easeOut' }}
           className="min-h-[500px]"
         >
-          {activeTab === 'itinerary' && <ItineraryTab trip={trip} onUpdate={fetchTrip} />}
+          {activeTab === 'itinerary' && <ItineraryTab trip={trip} onUpdate={fetchTrip} aiAnalysis={aiAnalysis} isAnalyzing={isAnalyzing} runAIAnalysis={runAIAnalysis} />}
           {activeTab === 'budget' && <BudgetTab trip={trip} currency={trip.currency || 'INR'} onUpdate={fetchTrip} />}
           {activeTab === 'fund' && <FundTab trip={trip} onUpdate={fetchTrip} />}
           {activeTab === 'packing' && <PackingTab trip={trip} onUpdate={fetchTrip} />}
@@ -147,7 +147,7 @@ const TripDetails = () => {
 
 // --- SUB-COMPONENTS ---
 
-const ItineraryTab = ({ trip, onUpdate }: any) => {
+const ItineraryTab = ({ trip, onUpdate, aiAnalysis, isAnalyzing, runAIAnalysis }: any) => {
   const [showAddStop, setShowAddStop] = useState(false);
   const [showAddActivity, setShowAddActivity] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -171,7 +171,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData);
+    const data = Object.fromEntries(formData as any);
     try {
       await api.post(`/trips/${trip.id}/stops`, {
         ...data,
@@ -186,7 +186,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.target);
-    const raw = Object.fromEntries(formData);
+    const raw = Object.fromEntries(formData as any);
     const data = {
       name: raw.name as string,
       type: (raw.type as string) || undefined,
@@ -201,7 +201,7 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
   };
 
 
-  const stops = trip.stops || [];
+
 
   return (
     <div className="space-y-5" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
@@ -345,9 +345,9 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
         </section>
       )}
 
-      <div className={`relative ${itineraryView === 'timeline' ? 'border-l-4 border-purple-100 ml-8 space-y-12 pb-12' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12'}`}>
-        {trip.stops?.length > 0 ? (
-          trip.stops.map((stop: any, idx: number) => {
+      {trip.stops?.length > 0 ? (
+        <div className={`relative ${itineraryView === 'timeline' ? 'border-l-4 border-purple-100 ml-8 space-y-12 pb-12' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12'}`}>
+          {trip.stops.map((stop: any, idx: number) => {
             const activityCost = stop.activities?.reduce((s: number, a: any) => s + (a.cost || 0), 0) || 0;
             const hasDateRange = stop.startDate || stop.endDate;
             return (
@@ -398,7 +398,8 @@ const ItineraryTab = ({ trip, onUpdate }: any) => {
                     Add Activity
                   </button>
                 </div>
-              </motion.div>
+                </div>
+              </div>
             );
           })}
 
@@ -528,6 +529,9 @@ const BudgetTab = ({ trip, currency }: any) => {
 
   const stopTotal = (stop: any) =>
     (stop.activities || []).reduce((s: number, a: any) => s + (Number(a.cost) || 0), 0);
+
+  const actualCost = grandTotal;
+  const predictedTotal = trip.budgetEstimate || 0;
 
 
   return (
@@ -881,7 +885,7 @@ const PackingTab = ({ trip, onUpdate }: any) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             try {
-              await api.post(`/trips/${trip.id}/packing`, Object.fromEntries(formData));
+              await api.post(`/trips/${trip.id}/packing`, Object.fromEntries(formData as any));
               setShowAdd(false);
               onUpdate();
             } catch (err) { alert('Failed to add item'); }
@@ -952,56 +956,15 @@ const JournalTab = ({ trip, onUpdate }: any) => {
         </div>
       </div>
 
-<<<<<<< HEAD
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
-        
         {/* Header section */}
         <div>
           <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-4">Trip notes</h3>
-          
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-700 shadow-sm">
               <span>Trip: {trip.name}</span>
               <ChevronDown className="w-4 h-4 text-gray-400" />
-=======
-      <div className="space-y-6">
-        {notes.map((note: any) => (
-          <motion.div
-            key={note.id}
-            whileHover={{ y: -5 }}
-            className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm hover:shadow-2xl transition-all group"
-          >
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-purple-50 text-purple-600 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest">Memories</span>
-                  <span className="text-xs font-black text-gray-300 uppercase tracking-widest flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {new Date(note.timestamp).toLocaleString()}
-                  </span>
-                </div>
-                {note.stopId && (
-                  <p className="flex items-center gap-1.5 text-sm font-bold text-purple-400">
-                    <MapPin className="w-3.5 h-3.5" /> Tied to {trip?.stops?.find((s: any) => s.id === note.stopId)?.cityName || 'Unknown Stop'}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => { setEditNote(note); setShowAdd(true); }}
-                  className="p-3 text-gray-300 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
-                >
-                  <Edit3 className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(note.id)}
-                  className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
->>>>>>> 41803eb30b09472b0a93ec6a0635601fd95a0a77
             </div>
-            
             <button
               onClick={() => { setEditNote(null); setShowAdd(true); }}
               className="bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-gray-800 transition-all shadow-sm active:scale-95"
@@ -1085,7 +1048,8 @@ const JournalTab = ({ trip, onUpdate }: any) => {
             onSubmit={async (e: any) => {
               e.preventDefault();
               const formData = new FormData(e.target);
-              const data = Object.fromEntries(formData);
+              const data: any = Object.fromEntries(formData as any);
+              if (!data.stopId) delete data.stopId;
               setLoading(true);
               try {
                 if (editNote) {
@@ -1151,7 +1115,7 @@ const FundTab = ({ trip, onUpdate }: any) => {
     if (!amount) return;
     const remaining = (trip.budgetEstimate || 0) - (trip.currentSavings || 0);
     if (parseFloat(amount) > remaining) {
-      alert(`You only need ${trip.currency} ${remaining.toLocaleString()} more to reach your goal!`);
+      alert("You only need " + trip.currency + " " + remaining.toLocaleString() + " more to reach your goal!");
       return;
     }
     setLoading(true);

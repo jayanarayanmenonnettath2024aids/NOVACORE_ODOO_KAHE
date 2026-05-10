@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, MapPin, Star, Filter, ArrowRight, Plus, 
-  TrendingUp, DollarSign, Globe, Navigation, Heart,
-  X, CheckCircle2, ChevronRight
+  Search, Filter, Plus, 
+  TrendingUp, Globe, Navigation, Heart,
+  X, ChevronRight
 } from 'lucide-react';
 import api from '../api/axios';
 

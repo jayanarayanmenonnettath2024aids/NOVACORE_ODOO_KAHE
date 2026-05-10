@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Calendar, MapPin, Globe, Share2, Copy, 
-  Clock, Activity, Star, 
+  Activity, 
   MessageCircle, Send
 } from 'lucide-react';
 import api from '../api/axios';
